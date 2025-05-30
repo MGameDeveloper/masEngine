@@ -5,7 +5,7 @@
 #include "masEngine.h"
 #include "masWindow.h"
 #include "masTime.h"
-#include "EngC_Input.h"
+#include "masInput.h"
 
 
 /*

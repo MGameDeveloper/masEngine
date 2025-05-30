@@ -1,6 +1,9 @@
 #
 cmake_minimum_required(VERSION 4.0)
 
+# Set Project Generator
+set(CMAKE_GENERATOR "Ninja")
+
 # Set C & C++ Compiler
 set(CMAKE_C_COMPILER "cl")
 set(CMAKE_CXX_COMPILER "cl")
@@ -8,10 +11,6 @@ set(CMAKE_CXX_COMPILER "cl")
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-# Set Project Generator
-set(CMAKE_GENERATOR "Ninja")
-
 
 # Define the name, version, and supported programming language of the project
 project(masEngine VERSION 1.0 LANGUAGES CXX)
