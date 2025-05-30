@@ -12,7 +12,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(masEngine)
 
 # Adds source files to a target
-target_sources(masEngine PRIVATE src/*.cpp)
+target_sources(masEngine PRIVATE 
+    src/masEngine.cpp
+	src/masTimeWin.cpp
+	src/masWindowWin.cpp
+	src/Test.cpp
+)
 
 # Specifies include directories for a target
 target_include_directories(masEngine PRIVATE inc)
