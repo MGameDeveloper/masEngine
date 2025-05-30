@@ -1,13 +1,6 @@
 #
 cmake_minimum_required(VERSION 4.0)
 
-# Set Project Generator
-set(CMAKE_GENERATOR "Ninja")
-
-# Set C & C++ Compiler
-set(CMAKE_C_COMPILER "cl")
-set(CMAKE_CXX_COMPILER "cl")
-
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -26,8 +19,21 @@ target_sources(masEngine PRIVATE
 	src/Test.cpp
 )
 
+#
+target_sources(masEngine PRIVATE
+    FILE_SET HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+    FILES
+        inc/masEngine.h
+        inc/masTime.h
+        inc/masWindow.h
+)
+
 # Specifies include directories for a target
 target_include_directories(masEngine PRIVATE inc)
+
+#
+add_compile_definitions(UNICODE _UNICODE)
 
 # Enable compiler warnings (optional, but recommended)
 #target_compile_options(masEngine PRIVATE)
