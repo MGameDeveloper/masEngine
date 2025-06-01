@@ -6,7 +6,7 @@
 #include "masWindow.h"
 #include "masTime.h"
 #include "masInputController.h"
-
+#include "masInputKeyMap.h"
 
 /*
 * Initial Design -> this interface would be called by engine systems to provide needed information/data for the game implementer
@@ -45,7 +45,8 @@ double masGame_Time()
 void masEngine_Window_OnKey(int32_t KeyCode, masWindowKeyState KeyState, masWindowKeyMod KeyMod)
 {
 	masGame_Input_Action Action = {};
-	Action.Key                = (masGame_EKey)KeyCode; // converter from platform key to engine agnostic key
+	//Action.Key                = (masGame_EKey)KeyCode; // converter from platform key to engine agnostic key
+	Action.Key                = (masGame_EKey)masEngine_Input_MapKey(EInputDevice_Keyboard, KeyCode);
 	Action.KeyMod.Keys.LCtrl  = KeyMod.Keys.LCtrl ;
 	Action.KeyMod.Keys.LShift = KeyMod.Keys.LShift;
 	Action.KeyMod.Keys.LAlt   = KeyMod.Keys.LAlt  ;

@@ -17,6 +17,7 @@ target_sources(masEngine PRIVATE
 	src/masTimeWin.cpp
 	src/masWindowWin.cpp
     src/masInputControllerWin.cpp
+    src/masInputKeyMapWin.cpp
 	src/Test.cpp
 )
 
