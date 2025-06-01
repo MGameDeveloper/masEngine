@@ -32,4 +32,3 @@ if %errorlevel% neq 0 (
 
 echo Build completed successfully
 
-start "" "%~dp0%BUILD_DIR%\%ENGINE_NAME%"
