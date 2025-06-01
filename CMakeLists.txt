@@ -16,18 +16,20 @@ target_sources(masEngine PRIVATE
     src/masEngine.cpp
 	src/masTimeWin.cpp
 	src/masWindowWin.cpp
+    src/masInputControllerWin.cpp
 	src/Test.cpp
 )
 
-#
-target_sources(masEngine PRIVATE
-    FILE_SET HEADERS
-    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
-    FILES
-        inc/masEngine.h
-        inc/masTime.h
-        inc/masWindow.h
-)
+# Created to make visual studio IDE recognize header files
+#target_sources(masEngine PRIVATE
+#    FILE_SET HEADERS
+#    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+#    FILES
+#        inc/masEngine.h
+#        inc/masTime.h
+#        inc/masWindow.h
+#        inc/masInputController.h
+#)
 
 # Specifies include directories for a target
 target_include_directories(masEngine PRIVATE inc)
