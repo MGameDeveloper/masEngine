@@ -7,6 +7,8 @@
 #include "masTime.h"
 #include "masInputController.h"
 #include "masInputKeyMap.h"
+#include "masGameLoader.h"
+
 
 /*
 * Initial Design -> this interface would be called by engine systems to provide needed information/data for the game implementer
@@ -23,6 +25,7 @@
 struct masEngine
 {
 	masWindow* Window;
+	masGame*   Game;
 };
 static masEngine Engine;
 
@@ -189,7 +192,15 @@ static bool masEngine_Create()
 	if (!masGame_Init())
 		return false;
 
+	// Will search in project folder for the name provided
+	Engine.Game = masGame_Load("test_eng");
+	if(!Engine.Game)
+	    return false;
+	masGame_Init(Engine.Game);
+	return false; // just testing
+
 	masWindow_Show(Engine.Window, true);
+
 	return true;
 }
 

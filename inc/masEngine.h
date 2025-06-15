@@ -233,13 +233,13 @@ union masGame_KeyMod
 
 struct masGame_Input_Action
 {
-	masGame_EKey      Key;
-	masGame_EKeyState KeyState;	
-	masGame_KeyMod    KeyMod;
 	struct
 	{
 		float x, y;
 	}Vec2;
+	masGame_EKey      Key;
+	masGame_EKeyState KeyState;	
+	masGame_KeyMod    KeyMod;
 };
 struct masGame_Input_Axis
 {
