@@ -23,6 +23,10 @@ struct masGame
 **************************************************************************/
 static bool masGame_Compile(const char* GameDir)
 {
+	DWORD CwdLen = 0;
+	char Cwd[256] = {};
+	GetCurrentDirectoryA(256, Cwd);
+	
     const char* GameBuildTemplateFile = "GameBuildTemplate.bat";
     if(!PathFileExistsA(GameBuildTemplateFile))
     {
@@ -31,7 +35,7 @@ static bool masGame_Compile(const char* GameDir)
     }
     
     char    GameBuildPath[256] = {};
-    int32_t GameBuildPathLen   = sprintf(GameBuildPath, "%s/Build.bat", GameDir);
+    int32_t GameBuildPathLen   = sprintf(GameBuildPath, "%s/%s/Build.bat", Cwd, GameDir);
     if(!CopyFileA(GameBuildTemplateFile, GameBuildPath, false))
     {
         MAS_LOG_ERROR("Copying %s to %s\n", GameBuildTemplateFile, GameBuildPath);
@@ -39,7 +43,7 @@ static bool masGame_Compile(const char* GameDir)
     }  
    
     char RunGameBuild[256] = {};
-    sprintf(RunGameBuild, "call %s", GameBuildPath);
+    sprintf(RunGameBuild, "call \"%s\"", GameBuildPath);
     printf("GAME_BUILD_COMMAND: %s\n", RunGameBuild);
 
     //
