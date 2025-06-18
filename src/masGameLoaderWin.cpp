@@ -11,6 +11,7 @@
 struct masGame
 {
     char            *Dir;
+	char            *Name;
     HMODULE          DLL;
     masGameInitFunc  InitFunc;
     masGameTickFunc  TickFunc;
@@ -21,33 +22,50 @@ struct masGame
 /*************************************************************************
 *
 **************************************************************************/
-static bool masGame_Compile(const char* GameDir)
+static bool masGame_Compile(const char* GameDir, const char* GameName)
 {
 	DWORD CwdLen = 0;
 	char Cwd[256] = {};
 	GetCurrentDirectoryA(256, Cwd);
 	
-    const char* GameBuildTemplateFile = "GameBuildTemplate.bat";
-    if(!PathFileExistsA(GameBuildTemplateFile))
+	
+	// Check if BuildGameTemplate exists
+    const char* GameBuildTemplate = "BuildGameTemplate.bat";
+    if(!PathFileExistsA(GameBuildTemplate))
     {
-        MAS_LOG_ERROR("%s not found\n", GameBuildTemplateFile);
+        MAS_LOG_ERROR("%s not found\n", GameBuildTemplate);
         return false;
     }
-    
-    char    GameBuildPath[256] = {};
-    int32_t GameBuildPathLen   = sprintf(GameBuildPath, "%s/%s/Build.bat", Cwd, GameDir);
-    if(!CopyFileA(GameBuildTemplateFile, GameBuildPath, false))
-    {
-        MAS_LOG_ERROR("Copying %s to %s\n", GameBuildTemplateFile, GameBuildPath);
-        return false;
-    }  
-   
-    char RunGameBuild[256] = {};
-    sprintf(RunGameBuild, "call \"%s\"", GameBuildPath);
-    printf("GAME_BUILD_COMMAND: %s\n", RunGameBuild);
+	
+	
+	// Create Build.bat in Game directory if not exists
+	char    GameBuildPath[256] = {};
+    int32_t GameBuildPathLen   = sprintf(GameBuildPath, "%s\\%s\\Build.bat", Cwd, GameDir);
+	if(!PathFileExistsA(GameBuildPath))
+	{
+		HANDLE GameBuildFile = CreateFileA(GameBuildPath, GENERIC_READ, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	    if(GameBuildFile == INVALID_HANDLE_VALUE)
+	    {
+	    	MAS_LOG_ERROR("WIN32_ERROR_CODE[ %u ] - Creating Build.bat for Game: %s\n", GetLastError(), GameName);
+	    	return false;
+	    }
+	    CloseHandle(GameBuildFile);
+	}
+ 
+	
+    // Copy BuiltGameTemplate Content to the created above in Game Directory 
+	if(!CopyFileA(GameBuildTemplate, GameBuildPath, FALSE))
+	{
+		MAS_LOG_ERROR("Copying %s to Game[ %s ]: %s\n", GameBuildTemplate, GameName, "Build.bat");
+		return false;
+	}
+	
+    char BuildGame[256] = {};
+    sprintf(BuildGame, "call \"%s\"", GameBuildPath);
+    printf("GAME_BUILD_COMMAND: %s\n", BuildGame);
 
     //
-    int32_t CmdRes = system(RunGameBuild);
+    int32_t CmdRes = system(BuildGame);
     if(CmdRes != 0)
     {
         MAS_LOG_ERROR("Wasn't able to compile the game [ %s ]\n", GameDir);
@@ -69,7 +87,7 @@ static bool masGameInternal_Recompile()
 masGame* masGame_Load(const char* GameName)
 {
     char GameDir[256] = {};
-    sprintf(GameDir, "../Projects/%s", GameName);
+    sprintf(GameDir, "..\\Projects\\%s", GameName);
     if(!PathFileExistsA(GameDir))
     {
         MAS_LOG_ERROR("No directory found [ %s ]\n", GameDir);
@@ -79,11 +97,11 @@ masGame* masGame_Load(const char* GameName)
 
     //
     char    GamePath[256] = {};
-    int32_t GamePathLen   = sprintf(GamePath, "%s/build/masGame.dll", GameDir);
+    int32_t GamePathLen   = sprintf(GamePath, "%s\\Build\\%s.dll", GameDir, GameName);
     HMODULE GameDLL       = LoadLibraryA(GamePath);
     if(!GameDLL)
     {
-        if(!masGame_Compile(GameDir))
+        if(!masGame_Compile(GameDir, GameName))
         {
             MAS_LOG_ERROR("Compiling [ %s ]\n", GameDir);
             return NULL;
