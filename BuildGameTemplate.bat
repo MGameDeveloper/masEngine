@@ -35,21 +35,21 @@ set SYS_LIB=
 
 :: Setup build command
 set BuildGame=cl
-set BuildGame=%BuildGame% -LD %CompileOptions%                &:: Pass compile flags
-set BuildGame=%BuildGame% -Fo%OBJ_DIR%\                       &:: Obj file output path
-set BuildGame=%BuildGame% -Fd%PDB_DIR%\                       &:: Pdb file output path
-set BuildGame=%BuildGame% %INC_DIR%                           &:: Add include paths
-set BuildGame=%BuildGame% %SRC_DIR%                           &:: Add Source paths
-set BuildGame=%BuildGame% -link                               &:: To pass linker options
-set BuildGame=%BuildGame% -DLL %LinkOptions%                  &:: Pass linker flags
-set BuildGame=%BuildGame% %SYS_LIB%                           &:: Add Libraries
-set BuildGame=%BuildGame% %LIB_DIR%                           &:: Add third party used libs
-set BuildGame=%BuildGame% -NOIMPLIB                           &:: 
-set BuildGame=%BuildGame% -NOEXP                              &:: 
-set BuildGame=%BuildGame% -ILK:"%BUILD_DIR%\%GAME_NAME%.ilk"  &:: TODO
-set BuildGame=%BuildGame% -PDB:"%PDB_DIR%\%GAME_NAME%.pdb"    &:: TODO
-set BuildGame=%BuildGame% -MAP:"%BUILD_DIR%\%GAME_NAME%.map"  &:: TODO
-set BuildGame=%BuildGame% -OUT:"%BUILD_DIR%\%GAME_NAME%.dll"  &:: Output exe with app_name value
+set BuildGame=%BuildGame% -LD %CompileOptions%                 &:: Pass compile flags
+set BuildGame=%BuildGame% -Fo%OBJ_DIR%\                        &:: Obj file output path
+set BuildGame=%BuildGame% -Fd%PDB_DIR%\                        &:: Pdb file output path
+set BuildGame=%BuildGame% %INC_DIR%                            &:: Add include paths
+set BuildGame=%BuildGame% %SRC_DIR%                            &:: Add Source paths
+set BuildGame=%BuildGame% -link                                &:: To pass linker options
+set BuildGame=%BuildGame% -DLL %LinkOptions%                   &:: Pass linker flags
+set BuildGame=%BuildGame% %SYS_LIB%                            &:: Add Libraries
+set BuildGame=%BuildGame% %LIB_DIR%                            &:: Add third party used libs
+set BuildGame=%BuildGame% -IMPLIB:"%BUILD_DIR%\%GAME_NAME%.lib" &:: 
+::set BuildGame=%BuildGame% -NOEXP                              &:: 
+set BuildGame=%BuildGame% -ILK:"%BUILD_DIR%\%GAME_NAME%.ilk"   &:: TODO
+set BuildGame=%BuildGame% -PDB:"%PDB_DIR%\%GAME_NAME%.pdb"     &:: TODO
+set BuildGame=%BuildGame% -MAP:"%BUILD_DIR%\%GAME_NAME%.map"   &:: TODO
+set BuildGame=%BuildGame% -OUT:"%BUILD_DIR%\%GAME_NAME%.dll"   &:: Output exe with app_name value
 
 
 :: Call build command to compile project

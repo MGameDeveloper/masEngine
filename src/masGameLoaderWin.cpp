@@ -22,7 +22,7 @@ struct masGame
 /*************************************************************************
 *
 **************************************************************************/
-static bool masGame_Compile(const char* GameDir, const char* GameName)
+static bool masGame_Compile(const char* GameDir)
 {
 	DWORD CwdLen = 0;
 	char Cwd[256] = {};
@@ -46,7 +46,7 @@ static bool masGame_Compile(const char* GameDir, const char* GameName)
 		HANDLE GameBuildFile = CreateFileA(GameBuildPath, GENERIC_READ, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	    if(GameBuildFile == INVALID_HANDLE_VALUE)
 	    {
-	    	MAS_LOG_ERROR("WIN32_ERROR_CODE[ %u ] - Creating Build.bat for Game: %s\n", GetLastError(), GameName);
+	    	MAS_LOG_ERROR("WIN32_ERROR_CODE[ %u ] - Creating Build.bat for %s\n", GetLastError(), GameDir);
 	    	return false;
 	    }
 	    CloseHandle(GameBuildFile);
@@ -56,7 +56,7 @@ static bool masGame_Compile(const char* GameDir, const char* GameName)
     // Copy BuiltGameTemplate Content to the created above in Game Directory 
 	if(!CopyFileA(GameBuildTemplate, GameBuildPath, FALSE))
 	{
-		MAS_LOG_ERROR("Copying %s to Game[ %s ]: %s\n", GameBuildTemplate, GameName, "Build.bat");
+		MAS_LOG_ERROR("Copying %s to [ %s ]: %s\n", GameBuildTemplate, GameDir, "Build.bat");
 		return false;
 	}
 	
@@ -97,11 +97,11 @@ masGame* masGame_Load(const char* GameName)
 
     //
     char    GamePath[256] = {};
-    int32_t GamePathLen   = sprintf(GamePath, "%s\\Build\\%s.dll", GameDir, GameName);
+    int32_t GamePathLen   = sprintf(GamePath, "%s\\Build\\masGame.dll", GameDir);
     HMODULE GameDLL       = LoadLibraryA(GamePath);
     if(!GameDLL)
     {
-        if(!masGame_Compile(GameDir, GameName))
+        if(!masGame_Compile(GameDir))
         {
             MAS_LOG_ERROR("Compiling [ %s ]\n", GameDir);
             return NULL;
@@ -118,11 +118,10 @@ masGame* masGame_Load(const char* GameName)
     masGame  *Game    = (masGame*)malloc(MemSize);
     if(!Game)
         return NULL;
-    else
-    {
-        memset(Game, 0, MemSize);
-        Game->Dir = MAS_ADDR_FROM(char, Game, sizeof(masGame));
-    }
+
+    //
+    memset(Game, 0, MemSize);
+    Game->Dir = MAS_ADDR_FROM(char, Game, sizeof(masGame));
 
 
     //
