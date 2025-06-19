@@ -7,16 +7,25 @@
 #include "masGameLoader.h"
 #include "masDefs.h"
 
+struct masChangesMonitorThread
+{
+	HANDLE Handle;
+	DWORD  Id;
+	CRITICAL_SECTION CriticalSection;
+	bool bReadyToSwapDLL;
+};
 
 struct masGame
 {
+	masChangesMonitorThread MonitorThread;
     char            *Dir;
 	char            *Name;
     HMODULE          DLL;
     masGameInitFunc  InitFunc;
     masGameTickFunc  TickFunc;
+	masGameDeInitFunc DeInitFunc;
 };
-
+static masGame *Game = NULL;
 
 
 /*************************************************************************
@@ -77,14 +86,24 @@ static bool masGame_Compile(const char* GameDir)
 
 static bool masGameInternal_Recompile()
 {
+	MAS_LOG_INFO("RE_COMPILE\n");
     return true;
 }
 
+DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
+{
+	masGame* pGame = (masGame*)Param;
+	
+	while(TRUE)
+	{
+		
+	}
+}
 
 /*************************************************************************
 *
 **************************************************************************/
-masGame* masGame_Load(const char* GameName)
+bool masGame_Load(const char* GameName)
 {
     char GameDir[256] = {};
     sprintf(GameDir, "..\\Projects\\%s", GameName);
@@ -104,18 +123,28 @@ masGame* masGame_Load(const char* GameName)
         if(!masGame_Compile(GameDir))
         {
             MAS_LOG_ERROR("Compiling [ %s ]\n", GameDir);
-            return NULL;
+            return false;
         }
         else
-            MAS_LOG_INFO("Compiling... [ %s ]\n", GameDir);
+		{
+			MAS_LOG_INFO("Compiled [ %s ]\n", GameDir);		
+			MAS_LOG_INFO("Loading... [ %s ]\n", GamePath);
+			GameDLL = LoadLibraryA(GamePath);
+			if(!GameDLL)
+			{
+				MAS_LOG_ERROR("Loading Failed [ %s ]\n", GameDir);
+				return false;
+			}
+			MAS_LOG_INFO("Loaded [ %s ]\n", GameDir);
+		}
     }  
-    MAS_LOG_INFO("Loading... [ %s ]\n", GamePath);
+    
           
 
     //
     int32_t   Len     = (int32_t)strlen(GameDir) + 1; // NULL Terminator
     uint64_t  MemSize = (sizeof(masGame) + (sizeof(char) * Len));
-    masGame  *Game    = (masGame*)malloc(MemSize);
+    Game = (masGame*)malloc(MemSize);
     if(!Game)
         return NULL;
 
@@ -126,32 +155,65 @@ masGame* masGame_Load(const char* GameName)
 
     //
     memcpy(Game->Dir, GameDir, sizeof(char) * (Len - 1));
-    Game->DLL = GameDLL;
-    Game->InitFunc = (masGameInitFunc)GetProcAddress(Game->DLL, MAS_GAME_INIT_FUNC_NAME);
-    Game->TickFunc = (masGameTickFunc)GetProcAddress(Game->DLL, MAS_GAME_TICK_FUNC_NAME);
-
+    Game->DLL        = GameDLL;
+    Game->InitFunc   = (masGameInitFunc)GetProcAddress(Game->DLL, MAS_GAME_INIT_FUNC_NAME);
+    Game->TickFunc   = (masGameTickFunc)GetProcAddress(Game->DLL, MAS_GAME_TICK_FUNC_NAME);
+    Game->DeInitFunc = (masGameDeInitFunc)GetProcAddress(Game->DLL, MAS_GAME_DEINIT_FUNC_NAME);
 
     //
-    if(!Game->InitFunc || !Game->TickFunc)
+    if(!Game->InitFunc || !Game->TickFunc || !Game->DeInitFunc)
     {
-        MAS_LOG_ERROR("GetProcAddress for ( %s or %s)\n", 
-            MAS_GAME_INIT_FUNC_NAME, 
+        MAS_LOG_ERROR("GetProcAddress for ( %s or %s or %s)\n", 
+            MAS_GAME_INIT_FUNC_NAME,
+            MAS_GAME_DEINIT_FUNC_NAME,			
             MAS_GAME_TICK_FUNC_NAME);
 
-        FreeLibrary(Game->DLL);
-        free(Game);
-        Game = NULL;
-        return NULL;
+        masGame_UnLoad();
+        return false;
     }
 
-    printf("%s: %s\n", MAS_FUNC_NAME, GameName);
-    printf("    GameDir:  %s\n",   Game->Dir);
-    printf("    Handle:   0x%p\n", Game->DLL);
-    printf("    InitFunc: 0x%p\n", Game->InitFunc);
-    printf("    TickFunc: 0x%p\n", Game->TickFunc);
 
-    return Game;
+    // Spawn thread
+    DWORD ThreadId = 0;
+	HANDLE ThreadHandle = CreateThread(NULL, 0, masGameInternal_MonitorAndCompileOnChanges, (LPVOID)Game, 0, &ThreadId);
+    if(ThreadHandle == INVALID_HANDLE_VALUE)
+	{
+		printf("Creating Thread to monitor game directory for changes\n");
+		masGame_UnLoad();
+		return false;
+	}
+	
+	Game->MonitorThread.Handle = ThreadHandle;
+	Game->MonitorThread.Id     = ThreadId;
+
+
+    // Log
+    printf("%s: %s\n", MAS_FUNC_NAME, GameName);
+	printf("    MonitorThread:\n");
+	printf("        -Handle: 0x%p\n", Game->MonitorThread.Handle);
+	printf("        -Id    : %u\n", Game->MonitorThread.Id);
+    printf("    GameDir: %s\n",   Game->Dir);
+    printf("    Handle:    0x%p\n", Game->DLL);
+    printf("    InitFunc:  0x%p\n", Game->InitFunc);
+    printf("    TickFunc:  0x%p\n", Game->TickFunc);
+    printf("    DinitFunc: 0x%p\n", Game->DeInitFunc);
+    return true;
 }
+
+
+void masGame_UnLoad()
+{
+	if(Game)
+	{
+		if(Game->DeInitFunc)
+			Game->DeInitFunc();
+		
+		FreeLibrary(Game->DLL);
+		free(Game);
+		Game = NULL;
+	};
+}
+
 
 void masGame_ReloadOnChanges(masGame** GameRef)
 {
@@ -190,7 +252,7 @@ void masGame_ReloadOnChanges(masGame** GameRef)
     }
 }
 
-bool masGame_Init(masGame* Game)
+bool masGame_Init()
 {
     if(!Game || !Game->InitFunc)
         return false;
@@ -198,7 +260,7 @@ bool masGame_Init(masGame* Game)
     return Game->InitFunc();
 }
 
-void masGame_Tick(masGame* Game)
+void masGame_Tick()
 {
     if(!Game || !Game->TickFunc)
         return;

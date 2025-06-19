@@ -25,7 +25,6 @@
 struct masEngine
 {
 	masWindow* Window;
-	masGame*   Game;
 };
 static masEngine Engine;
 
@@ -193,11 +192,9 @@ static bool masEngine_Create()
 		return false;
 
 	// Will search in project folder for the name provided
-	Engine.Game = masGame_Load("test_eng");
-	if(!Engine.Game)
+	if(! masGame_Load("test_eng"))
 	    return false;
-	masGame_Init(Engine.Game);
-	return false; // just testing
+	masGame_Init();
 
 	masWindow_Show(Engine.Window, true);
 
@@ -206,7 +203,7 @@ static bool masEngine_Create()
 
 static void masEngine_Destroy()
 {
-	masGame_DeInit();
+	masGame_UnLoad();
 	masWindow_Destroy(&Engine.Window);
 }
 
@@ -232,7 +229,7 @@ int main(int argc, const char** argv)
 		masTime_Update();
 		masEngine_DispatchEvents();
 		
-		masGame_Update(masTime_DeltaTime());
+		masGame_Tick();
 	}
 
 	masEngine_Destroy();

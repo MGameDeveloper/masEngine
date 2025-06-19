@@ -1,4 +1,4 @@
-
+#if 1
 #include "masEngine.h"
 
 #include <stdio.h>
@@ -77,3 +77,4 @@ void masGame_Event_OnSystemEvent(masGame_SystemEvent Event)
 	//case ESystemEvent_Window_Minimize: printf("WindowMinimized\n"); break;
 	//}
 }
+#endif
