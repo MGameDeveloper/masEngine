@@ -27,7 +27,7 @@ if not exist %PDB_DIR%   ( mkdir %PDB_DIR%   )
 
 
 ::
-set INC_DIR=-I "%GAME_PATH%Inc\\"
+set INC_DIR=-I"%GAME_PATH%Inc\\" -I"%GAME_PATH%\..\..\Engine\Inc\GameAPI\\"
 set SRC_DIR=%GAME_PATH%Src\*.cpp
 set LIB_DIR=-LIBPATH:"%GAME_PATH%Lib\\"
 set SYS_LIB=
@@ -35,7 +35,7 @@ set SYS_LIB=
 
 :: Setup build command
 set BuildGame=cl
-set BuildGame=%BuildGame% -LD %CompileOptions%                 &:: Pass compile flags
+set BuildGame=%BuildGame% -LD -DMAS_GAME_API %CompileOptions%  &:: Pass compile flags
 set BuildGame=%BuildGame% -Fo%OBJ_DIR%\                        &:: Obj file output path
 set BuildGame=%BuildGame% -Fd%PDB_DIR%\                        &:: Pdb file output path
 set BuildGame=%BuildGame% %INC_DIR%                            &:: Add include paths

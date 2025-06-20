@@ -27,7 +27,7 @@ if not exist %PDB_DIR%   ( mkdir %PDB_DIR%   )
 
 
 ::
-set INC_DIR=-I "%ENGINE_PATH%Inc\\"
+set INC_DIR=-I"%ENGINE_PATH%Inc\\" -I"%ENGINE_PATH%Inc\GameAPI\\"
 set SRC_DIR=%ENGINE_PATH%Src\*.cpp
 set LIB_DIR=-LIBPATH:"%ENGINE_PATH%Lib\\"
 set SYS_LIB=user32.lib Shlwapi.lib

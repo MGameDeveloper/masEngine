@@ -1,12 +1,22 @@
-#if 0
 #pragma once
 
 #include <stdint.h>
 
-/*****************************************************************************
-* MAIN API & UTILS SECTIONS
-*****************************************************************************/
-struct masGame_InitData
+#include "../../masDefs.h"
+
+//#ifndef MAS_GAME_API
+//    #define MAS_API extern "C" __declspec(dllimport)
+//#else
+//	#define MAS_API extern "C" __declspec(dllexport)
+//#endif
+//
+//#if defined(UNICODE) || defined(_UNICODE)
+//    #define MAS_TEXT(T) L##T
+//#else
+//	#define MAS_TEXT(T) T 
+//#endif
+
+struct masInfo
 {
 	const wchar_t *Name;
 	const wchar_t *AssetPath;
@@ -15,11 +25,6 @@ struct masGame_InitData
 	int            Width;
 	int            Height;
 };
-
-extern masGame_InitData masGame_GetInitData();
-extern bool masGame_Init();
-extern void masGame_DeInit();
-extern void masGame_Update(double ElapsedTime);
 
 
 /*****************************************************************************
@@ -248,9 +253,6 @@ struct masGame_Input_Axis
 	masGame_KeyMod KeyMod;
 	float          Value;
 };
-void masGame_Input_OnAction(masGame_Input_Action* Action);
-void masGame_Input_OnAxis(masGame_Input_Axis* Axis);
-void masGame_Input_OnTextEnter(wchar_t Letter);
 
 
 /*****************************************************************************
@@ -291,6 +293,39 @@ struct masGame_SystemEvent
 
 	}Data;
 };
-void masGame_Event_OnSystemEvent(masGame_SystemEvent Event);
 
-#endif
+
+/*****************************************************************************
+* 
+*****************************************************************************/
+typedef bool (*masGame_InitFunc)();
+typedef void (*masGame_DeInitFunc)();
+typedef void (*masGame_TickFunc)();
+typedef void (*masGame_GetInfoFunc)(masInfo* Info);
+typedef void (*masGame_Event_OnSystemEventFunc)(masGame_SystemEvent Event);
+typedef void (*masGame_Input_OnActionFunc)(masGame_Input_Action* Action);
+typedef void (*masGame_Input_OnAxisFunc)(masGame_Input_Axis* Axis);
+typedef void (*masGame_Input_OnTextEnterFunc)(wchar_t Letter);
+
+
+struct masGameAPI
+{
+	masGame_InitFunc                 masInit;
+    masGame_DeInitFunc               masDeInit;
+    masGame_TickFunc                 masTick;
+    masGame_GetInfoFunc              masGetGameInfo;
+	
+	// Input Functions
+    masGame_Event_OnSystemEventFunc  masOnSystemEvent;
+    masGame_Input_OnActionFunc       masOnInputAction;
+    masGame_Input_OnAxisFunc         masOnInputAxis;
+    masGame_Input_OnTextEnterFunc    masOnTextEnter;
+};
+
+
+
+
+
+
+
+

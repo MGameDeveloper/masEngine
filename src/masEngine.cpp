@@ -8,7 +8,7 @@
 #include "masInputController.h"
 #include "masInputKeyMap.h"
 #include "masGameLoader.h"
-
+#include "GameAPI/masGameAPI.h"
 
 /*
 * Initial Design -> this interface would be called by engine systems to provide needed information/data for the game implementer
@@ -24,7 +24,8 @@
 
 struct masEngine
 {
-	masWindow* Window;
+	masWindow  *Window;
+	masGameAPI  Game;
 };
 static masEngine Engine;
 
@@ -58,12 +59,12 @@ void masEngine_Window_OnKey(int32_t KeyCode, masWindowKeyState KeyState, masWind
 	Action.KeyState           = (masGame_EKeyState)KeyState; // converter from source provider keystate to engine agnostic keystate
 	Action.Vec2               = {};
 
-	masGame_Input_OnAction(&Action);
+	//masGame_Input_OnAction(&Action);
 }
 
 void masEngine_Window_OnTextEnter(wchar_t Letter)
 {
-	masGame_Input_OnTextEnter(Letter);
+	//masGame_Input_OnTextEnter(Letter);
 }
 
 void masEngine_Window_OnMouseButton(masWindowMouseKey Button, masWindowKeyState KeyState, masWindowKeyMod KeyMod, masPoint MousePos)
@@ -79,7 +80,7 @@ void masEngine_Window_OnMouseButton(masWindowMouseKey Button, masWindowKeyState 
 	Action.KeyState           = (masGame_EKeyState)KeyState; // converter from source provider keystate to engine agnostic keystate
 	Action.Vec2               = {(float)MousePos.x, (float)MousePos.y};
 
-	masGame_Input_OnAction(&Action);
+	//masGame_Input_OnAction(&Action);
 }
 
 void masEngine_Window_OnMouseMove(masPoint MousePos)
@@ -87,21 +88,21 @@ void masEngine_Window_OnMouseMove(masPoint MousePos)
 	masGame_SystemEvent Event = {};
 	Event.Type           = ESystemEvent_Mouse_Move;
 	Event.Data.Mouse.Pos = { MousePos.x, MousePos.y };
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnMouseEnter()
 {
 	masGame_SystemEvent Event = {};
 	Event.Type = ESystemEvent_Mouse_Enter;
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnMouseLeave()
 {
 	masGame_SystemEvent Event = {};
 	Event.Type = ESystemEvent_Mouse_Leave;
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnWindowResize(masWindowSize Size, masWindowSize ClientSize)
@@ -113,21 +114,21 @@ void masEngine_Window_OnWindowResize(masWindowSize Size, masWindowSize ClientSiz
 	Event.Data.Window.Size       = { Size.x,       Size.y };
 	Event.Data.Window.ClientSize = { ClientSize.x, ClientSize.y };
 	Event.Data.Window.Pos        = { Pos.x,        Pos.y };
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnWindowMaximize()
 {
 	masGame_SystemEvent Event = {};
 	Event.Type = ESystemEvent_Window_Maximize;
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnWindowMinimize()
 {
 	masGame_SystemEvent Event = {};
 	Event.Type = ESystemEvent_Window_Minimize;
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnWindowMove(masPoint WindowPos)
@@ -140,14 +141,14 @@ void masEngine_Window_OnWindowMove(masPoint WindowPos)
 	Event.Data.Window.Size       = { Size.x,       Size.y };
 	Event.Data.Window.ClientSize = { ClientSize.x, ClientSize.y };
 	Event.Data.Window.Pos        = { WindowPos.x,  WindowPos.y };
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnDevicesChange()
 {
 	masGame_SystemEvent Event = {};
 	Event.Type = ESystemEvent_DeviceChanges;
-	masGame_Event_OnSystemEvent(Event);
+	//masGame_Event_OnSystemEvent(Event);
 }
 
 void masEngine_Window_OnClose()
@@ -163,8 +164,8 @@ static bool masEngine_Create()
 {
 	masTime_Init();
 
-	masGame_InitData InitData = masGame_GetInitData();
-	Engine.Window = masWindow_Create(InitData.Name, InitData.Width, InitData.Height);
+	//masGame_InitData InitData = masGame_GetInitData();
+	Engine.Window = masWindow_Create(L"masEngine", 1200, 800);
 	if (!Engine.Window)
 		return false;
 	else
@@ -188,14 +189,16 @@ static bool masEngine_Create()
 	//if (!EngC_Input_Init()) 
 	//	return false;
 
-	if (!masGame_Init())
-		return false;
+	//if (!masGame_Init())
+	//	return false;
 
 	// Will search in project folder for the name provided
-	if(! masGame_Load("test_eng"))
+	if(!masGame_Load("test_eng", &Engine.Game))
 	    return false;
-	masGame_Init();
-
+	//masGame_Init();
+    //masEngine_GetGameAPI(&Engine.Game);
+	Engine.Game.masInit();
+	return false;
 	masWindow_Show(Engine.Window, true);
 
 	return true;
@@ -229,7 +232,7 @@ int main(int argc, const char** argv)
 		masTime_Update();
 		masEngine_DispatchEvents();
 		
-		masGame_Tick();
+		//masGame_Tick();
 	}
 
 	masEngine_Destroy();
