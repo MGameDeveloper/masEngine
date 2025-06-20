@@ -22,8 +22,8 @@ struct masInfo
 	const wchar_t *AssetPath;
 	int32_t        MajorVersion;
 	int32_t        MinorVersion;
-	int            Width;
-	int            Height;
+	int32_t        Width;
+	int32_t        Height;
 };
 
 

@@ -16,10 +16,10 @@ MAS_FUNC_TYPE(void, masGame_GetAPI, masGameAPI* GameAPI);
 **************************************************************************/
 struct masChangesMonitorThread
 {
-	HANDLE Handle;
-	DWORD  Id;
+	HANDLE           Handle;
+	DWORD            Id;
 	CRITICAL_SECTION CriticalSection;
-	bool bReadyToSwapDLL;
+	bool             bReadyToSwapDLL;
 };
 
 struct masGame
@@ -28,9 +28,6 @@ struct masGame
     char            *Dir;
 	char            *Name;
     HMODULE          DLL;
-    //masGameInitFunc  InitFunc;
-    //masGameTickFunc  TickFunc;
-	//masGameDeInitFunc DeInitFunc;
 };
 static masGame *Game = NULL;
 
@@ -93,6 +90,7 @@ static bool masGame_Compile(const char* GameDir)
 
 static bool masGameInternal_Recompile()
 {
+	// 
 	MAS_LOG_INFO("RE_COMPILE\n");
     return true;
 }
@@ -100,11 +98,44 @@ static bool masGameInternal_Recompile()
 DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 {
 	masGame* pGame = (masGame*)Param;
-	
-	while(TRUE)
+	if(!pGame)
 	{
-		
+		MAS_LOG_ERROR("Param is NULL");
+		return -1;
 	}
+	
+	HANDLE ChangeHandle = FindFirstChangeNotificationA(pGame->Dir, TRUE, 
+        FILE_NOTIFY_CHANGE_LAST_WRITE |  
+        FILE_NOTIFY_CHANGE_DIR_NAME   | 
+        FILE_NOTIFY_CHANGE_FILE_NAME);
+
+    if(ChangeHandle == INVALID_HANDLE_VALUE)
+	{
+		MAS_LOG_ERROR("Creating change handle for game directory [ WIN32_ERROR: %u ]\n", GetLastError());
+		printf("\t For: %s\n", pGame->Dir);
+		return -1;
+	}
+	
+	DWORD WaitState = 0;
+    while(TRUE)
+    {
+        WaitState = WaitForSingleObject(ChangeHandle, INFINITE);
+        switch(WaitState)
+        {
+        case WAIT_OBJECT_0:
+            if(!masGameInternal_Recompile())
+            {
+                MAS_LOG_ERROR("Recompile %s when directory changes\n", pGame->Dir);
+            }
+
+            if(!FindNextChangeNotification(ChangeHandle))
+            {
+                DWORD Error = GetLastError();
+                MAS_LOG_ERROR("FindNextChangeNotification [ %u ] error code\n", Error);
+            }
+            break;
+        }
+    }
 }
 
 /*************************************************************************
@@ -144,9 +175,7 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
 			}
 			MAS_LOG_INFO("Loaded [ %s ]\n", GameDir);
 		}
-    }  
-    
-          
+    }         
 
     //
     int32_t   Len     = (int32_t)strlen(GameDir) + 1; // NULL Terminator
@@ -159,11 +188,9 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
     memset(Game, 0, MemSize);
     Game->Dir = MAS_ADDR_FROM(char, Game, sizeof(masGame));
 
-
     //
     memcpy(Game->Dir, GameDir, sizeof(char) * (Len - 1));
     Game->DLL        = GameDLL;
-	
 	
 	//
 	const char* FuncName = "masGame_GetAPI";
@@ -177,10 +204,10 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
 	// 
 	GetGameAPI(GameAPI);
 
-
     // Spawn thread
     DWORD  ThreadId = 0;
-	HANDLE ThreadHandle = CreateThread(NULL, 0, masGameInternal_MonitorAndCompileOnChanges, (LPVOID)Game, 0, &ThreadId);
+	HANDLE ThreadHandle = CreateThread(NULL, 0, 
+	    masGameInternal_MonitorAndCompileOnChanges, (LPVOID)Game, 0, &ThreadId);
     if(ThreadHandle == INVALID_HANDLE_VALUE)
 	{
 		printf("Creating Thread to monitor game directory for changes\n");
@@ -190,9 +217,8 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
 	
 	Game->MonitorThread.Handle = ThreadHandle;
 	Game->MonitorThread.Id     = ThreadId;
-	
-	
-	    // Log
+		
+	// Log
     printf("%s: %s\n", MAS_FUNC_NAME, GameName);
 	printf("    MonitorThread:\n");
 	printf("        -Handle: 0x%p\n", Game->MonitorThread.Handle);
@@ -216,63 +242,3 @@ void masGame_UnLoad()
 		Game = NULL;
 	};
 }
-
-
-void masGame_ReloadOnChanges(masGame** GameRef)
-{
-    if(!GameRef || !(*GameRef))
-        return;
-
-    masGame* Game = *GameRef;
-
-    HANDLE ChangeHandle = FindFirstChangeNotificationA(Game->Dir, TRUE, 
-        FILE_NOTIFY_CHANGE_LAST_WRITE |  
-        FILE_NOTIFY_CHANGE_DIR_NAME   | 
-        FILE_NOTIFY_CHANGE_FILE_NAME);
-
-    if(ChangeHandle == INVALID_HANDLE_VALUE || !ChangeHandle)
-        return;
-    
-    DWORD WaitState;
-    while(1)
-    {
-        WaitState = WaitForSingleObject(ChangeHandle, INFINITE);
-        switch(WaitState)
-        {
-        case WAIT_OBJECT_0:
-            if(!masGameInternal_Recompile())
-            {
-                MAS_LOG_ERROR("Recompile %s when directory changes\n", Game->Dir);
-            }
-
-            if(!FindNextChangeNotification(ChangeHandle))
-            {
-                DWORD Error = GetLastError();
-                MAS_LOG_ERROR("FindNextChangeNotification [ %u ] error code\n", Error);
-            }
-            break;
-        }
-    }
-}
-
-
-//bool masGame_Init()
-//{
-//    if(!Game || !Game->InitFunc)
-//        return false;
-//
-//    return Game->InitFunc();
-//}
-//
-//void masGame_Tick()
-//{
-//    if(!Game || !Game->TickFunc)
-//        return;
-//
-//    Game->TickFunc();
-//}
-
-
-
-
-

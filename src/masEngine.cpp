@@ -10,6 +10,8 @@
 #include "masGameLoader.h"
 #include "GameAPI/masGameAPI.h"
 
+#include <stdio.h>
+
 /*
 * Initial Design -> this interface would be called by engine systems to provide needed information/data for the game implementer
 *                   but this will result in any change happen in the game api (EngC.h) would trigger the compilation of all the system
@@ -27,7 +29,7 @@ struct masEngine
 	masWindow  *Window;
 	masGameAPI  Game;
 };
-static masEngine Engine;
+static masEngine Engine = {};
 
 /*******************************************************************************************************************
 *
@@ -195,10 +197,25 @@ static bool masEngine_Create()
 	// Will search in project folder for the name provided
 	if(!masGame_Load("test_eng", &Engine.Game))
 	    return false;
-	//masGame_Init();
-    //masEngine_GetGameAPI(&Engine.Game);
+    else
+	{
+		masGameAPI* GameApi = &Engine.Game;
+		masInfo Info = {};
+		GameApi->masGetGameInfo(&Info);
+		printf("GAME_Name:       %ls\n",   Info.Name);
+	    printf("GAME_AssetPath:  %ls\n",   Info.AssetPath);
+	    printf("GAME_Version:    %d.%d\n", Info.MajorVersion, Info.MinorVersion);
+	    printf("GAME_Resolution: %dx%d\n", Info.Width, Info.Height);
+		
+		wchar_t Title[64] = {};
+		swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
+		Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
+		
+		masWindow_SetTitle(Engine.Window, Title);
+		masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
+	}
 	Engine.Game.masInit();
-	return false;
+
 	masWindow_Show(Engine.Window, true);
 
 	return true;
