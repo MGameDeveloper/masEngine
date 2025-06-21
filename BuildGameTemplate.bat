@@ -14,10 +14,10 @@ set GAME_NAME=masGame
 
 
 :: Compiler Output Files' Directories
-set BUILD_DIR=%GAME_PATH%Build
+set BUILD_FOLDER=%1
+set BUILD_DIR=%GAME_PATH%%BUILD_FOLDER%
 set OBJ_DIR=%BUILD_DIR%\obj
 set PDB_DIR=%BUILD_DIR%\pdb
-
 
 
 :: Create Dirctories if not existed
@@ -30,7 +30,6 @@ if not exist %PDB_DIR%   ( mkdir %PDB_DIR%   )
 set INC_DIR=-I"%GAME_PATH%Inc\\" -I"%GAME_PATH%\..\..\Engine\Inc\GameAPI\\"
 set SRC_DIR=%GAME_PATH%Src\*.cpp
 set LIB_DIR=-LIBPATH:"%GAME_PATH%Lib\\"
-set SYS_LIB=
 
 
 :: Setup build command

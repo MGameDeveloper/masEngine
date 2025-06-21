@@ -246,6 +246,22 @@ int main(int argc, const char** argv)
 
 	while (!masWindow_IsClosed(Engine.Window))
 	{
+		if(masGame_ReloadOnChanges(&Engine.Game))
+		{
+			masGameAPI* GameApi = &Engine.Game;
+		    masInfo Info = {};
+		    GameApi->masGetGameInfo(&Info);
+		
+			wchar_t Title[64] = {};
+		    swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
+		    Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
+		    
+		    masWindow_SetTitle(Engine.Window, Title);
+		    masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
+		    
+			Engine.Game.masInit();
+		}
+		
 		masTime_Update();
 		masEngine_DispatchEvents();
 		
