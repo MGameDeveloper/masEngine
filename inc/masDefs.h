@@ -13,25 +13,34 @@ __INTEL_COMPILER
 #endif
 
 
-#define MAS_LOG_ERROR(msg, ...) printf("%s: ERROR -> "msg, MAS_FUNC_NAME, ##__VA_ARGS__)
-#define MAS_LOG_INFO(msg, ...)  printf("%s: INFO  -> "msg, MAS_FUNC_NAME, ##__VA_ARGS__)
-
-
+//
+#define MAS_LOG_ERROR(msg, ...)          printf("%s: ERROR -> "msg, MAS_FUNC_NAME, ##__VA_ARGS__)
+#define MAS_LOG_INFO(msg, ...)           printf("%s: INFO  -> "msg, MAS_FUNC_NAME, ##__VA_ARGS__)
 #define MAS_ADDR_FROM(type, ptr, offset) (type*)(((uint8_t*)ptr)+offset)
+#define MAS_FUNC_TYPE(RET, NAME, ...)    typedef RET(*NAME)(##__VA_ARGS__)
 
 
-#define MAS_FUNC_TYPE(RET, NAME, ...) typedef RET(*NAME)(##__VA_ARGS__)
-
-
-#ifndef MAS_GAME_API
-    #define MAS_API extern "C" __declspec(dllimport)
-#else
-	#define MAS_API extern "C" __declspec(dllexport)
-#endif
-
-
+//
 #if defined(UNICODE) || defined(_UNICODE)
     #define MAS_TEXT(T) L##T
 #else
 	#define MAS_TEXT(T) T 
 #endif
+
+
+// To export API from game to be called by the engine
+#if defined(MAS_GAME_EXPORT_API)
+    #define MAS_GAME_API extern "C" __declspec(dllexport)
+#else
+	#define MAS_GAME_API extern "C" __declspec(dllimport)
+#endif
+
+
+// To export API from the engine to be called by the game
+#if defined(MAS_ENGINE_EXPORT_API)
+    #define MAS_ENGINE_API extern "C" __declspec(dllexport)
+#else
+	#define MAS_ENGINE_API extern "C" __declspec(dllimport)
+#endif
+
+

@@ -153,6 +153,11 @@ masWindowPos masWindow_GetPosition(masWindow* Wnd)
 	return Wnd->Position;
 }
 
+void* masWindow_GetHandle(masWindow* Wnd)
+{
+	return (void*)Wnd->Handle;
+}
+
 /*****************************************************************************************
 * MODIFY INTERFACE
 ******************************************************************************************/

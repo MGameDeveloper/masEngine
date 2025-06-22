@@ -29,12 +29,12 @@ if not exist %PDB_DIR%   ( mkdir %PDB_DIR%   )
 ::
 set INC_DIR=-I"%GAME_PATH%Inc\\" -I"%GAME_PATH%\..\..\Engine\Inc\GameAPI\\"
 set SRC_DIR=%GAME_PATH%Src\*.cpp
-set LIB_DIR=-LIBPATH:"%GAME_PATH%Lib\\"
-
+set LIB_DIR=-LIBPATH:"%GAME_PATH%Lib\\" -LIBPATH:"%GAME_PATH%\..\..\Engine\Build\"
+set SYS_LIB=masEngine.lib
 
 :: Setup build command
 set BuildGame=cl
-set BuildGame=%BuildGame% -LD -DMAS_GAME_API %CompileOptions%  &:: Pass compile flags
+set BuildGame=%BuildGame% -LD -DMAS_GAME_EXPORT_API %CompileOptions%  &:: Pass compile flags
 set BuildGame=%BuildGame% -Fo%OBJ_DIR%\                        &:: Obj file output path
 set BuildGame=%BuildGame% -Fd%PDB_DIR%\                        &:: Pdb file output path
 set BuildGame=%BuildGame% %INC_DIR%                            &:: Add include paths
@@ -54,3 +54,4 @@ set BuildGame=%BuildGame% -OUT:"%BUILD_DIR%\%GAME_NAME%.dll"   &:: Output exe wi
 :: Call build command to compile project
 echo Building %GAME_NAME% ...
 %BuildGame%
+

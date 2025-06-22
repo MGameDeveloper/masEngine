@@ -35,7 +35,7 @@ set SYS_LIB=user32.lib Shlwapi.lib
 
 :: Setup build command
 set BuildEngine=cl
-set BuildEngine=%BuildEngine% %CompileOptions%                      &:: Pass compile flags
+set BuildEngine=%BuildEngine% -DMAS_ENGINE_EXPORT_API %CompileOptions%                      &:: Pass compile flags
 set BuildEngine=%BuildEngine% -Fo:%OBJ_DIR%\                        &:: Obj file output path
 set BuildEngine=%BuildEngine% -Fd:%PDB_DIR%\                        &:: Pdb file output path
 set BuildEngine=%BuildEngine% %INC_DIR%                             &:: Add include paths
@@ -44,6 +44,7 @@ set BuildEngine=%BuildEngine% -link                                 &:: To pass 
 set BuildEngine=%BuildEngine% %LinkOptions%                         &:: Pass linker flags
 set BuildEngine=%BuildEngine% %SYS_LIB%                             &:: Add Libraries
 set BuildEngine=%BuildEngine% %LIB_DIR%                             &:: Add third party used libs
+set BuildEngine=%BuildEngine% -IMPLIB:"%BUILD_DIR%\%ENGINE_NAME%.lib"
 set BuildEngine=%BuildEngine% -ILK:"%BUILD_DIR%\%ENGINE_NAME%.ilk"  &:: TODO
 set BuildEngine=%BuildEngine% -PDB:"%PDB_DIR%\%ENGINE_NAME%.pdb"    &:: TODO
 set BuildEngine=%BuildEngine% -MAP:"%BUILD_DIR%\%ENGINE_NAME%.map"  &:: TODO

@@ -29,6 +29,7 @@ void       masWindow_Show(masWindow* Wnd, bool Enable);
 masWindowSize masWindow_GetSize(masWindow* Wnd);
 masWindowSize masWindow_GetClientSize(masWindow* Wnd);
 masWindowPos  masWindow_GetPosition(masWindow* Wnd);
+void*         masWindow_GetHandle(masWindow* Wnd);
 
 
 /*****************************************************************************************

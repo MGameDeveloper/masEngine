@@ -1,7 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Shlwapi.h>
-#include <Shellapi.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -310,10 +309,12 @@ bool masGame_ReloadOnChanges(masGameAPI* GameAPI)
 			"(if exist OldBuild rmdir /s /q OldBuild) "
 			"\"", Game->Dir);
 		
-		if(system(SwapCmd) == -1)
+		int32_t SwapCmdRes = system(SwapCmd);
+		if(SwapCmdRes == -1)
 			MAS_LOG_ERROR("Could not remove OldBuild win32_error %u\n", GetLastError());
 		else
-			MAS_LOG_INFO("Removed OldBuild");
+			MAS_LOG_INFO("Removed OldBuild\n");
+		MAS_LOG_INFO("SWAP_CMD_RES: %d\n", SwapCmdRes);
 		
 		//
 		char DLLPath[MAX_PATH] = {};

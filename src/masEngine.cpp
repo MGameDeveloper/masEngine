@@ -8,7 +8,7 @@
 #include "masInputController.h"
 #include "masInputKeyMap.h"
 #include "masGameLoader.h"
-#include "GameAPI/masGameAPI.h"
+#include "GameAPI/masEngineAPI.h"
 
 #include <stdio.h>
 
@@ -197,23 +197,23 @@ static bool masEngine_Create()
 	// Will search in project folder for the name provided
 	if(!masGame_Load("test_eng", &Engine.Game))
 	    return false;
-    else
-	{
-		masGameAPI* GameApi = &Engine.Game;
-		masInfo Info = {};
-		GameApi->masGetGameInfo(&Info);
-		printf("GAME_Name:       %ls\n",   Info.Name);
-	    printf("GAME_AssetPath:  %ls\n",   Info.AssetPath);
-	    printf("GAME_Version:    %d.%d\n", Info.MajorVersion, Info.MinorVersion);
-	    printf("GAME_Resolution: %dx%d\n", Info.Width, Info.Height);
-		
-		wchar_t Title[64] = {};
-		swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
-		Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
-		
-		masWindow_SetTitle(Engine.Window, Title);
-		masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
-	}
+    //else
+	//{
+	//	masGameAPI* GameApi = &Engine.Game;
+	//	masInfo Info = {};
+	//	GameApi->masGetGameInfo(&Info);
+	//	printf("GAME_Name:       %ls\n",   Info.Name);
+	//    printf("GAME_AssetPath:  %ls\n",   Info.AssetPath);
+	//    printf("GAME_Version:    %d.%d\n", Info.MajorVersion, Info.MinorVersion);
+	//    printf("GAME_Resolution: %dx%d\n", Info.Width, Info.Height);
+	//	
+	//	wchar_t Title[64] = {};
+	//	swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
+	//	Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
+	//	
+	//	masWindow_SetTitle(Engine.Window, Title);
+	//	masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
+	//}
 	Engine.Game.masInit();
 
 	masWindow_Show(Engine.Window, true);
@@ -248,16 +248,16 @@ int main(int argc, const char** argv)
 	{
 		if(masGame_ReloadOnChanges(&Engine.Game))
 		{
-			masGameAPI* GameApi = &Engine.Game;
-		    masInfo Info = {};
-		    GameApi->masGetGameInfo(&Info);
-		
-			wchar_t Title[64] = {};
-		    swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
-		    Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
-		    
-		    masWindow_SetTitle(Engine.Window, Title);
-		    masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
+			//masGameAPI* GameApi = &Engine.Game;
+		    //masInfo Info = {};
+		    //GameApi->masGetGameInfo(&Info);
+			//
+			//wchar_t Title[64] = {};
+		    //swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
+		    //Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
+		    //
+		    //masWindow_SetTitle(Engine.Window, Title);
+		    //masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
 		    
 			Engine.Game.masInit();
 		}
@@ -271,3 +271,64 @@ int main(int argc, const char** argv)
 	masEngine_Destroy();
 	return 0;
 }
+
+
+
+
+/*******************************************************************************************************************
+* MAS ENGINE API IMPL
+********************************************************************************************************************/
+MAS_ENGINE_API masEngineWindowHandle masEngineWindow_GetHandle()
+{
+	return masWindow_GetHandle(Engine.Window);
+}
+
+MAS_ENGINE_API void masEngineWindow_SetDesc(masEngineWindowDesc* WindowDesc)
+{
+	wchar_t Title[64] = {};
+	swprintf_s(Title, L"%ls", WindowDesc->Title);
+	
+	masWindow_SetTitle(Engine.Window, Title);
+	masWindow_SetSize(Engine.Window, {WindowDesc->Width, WindowDesc->Height});
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

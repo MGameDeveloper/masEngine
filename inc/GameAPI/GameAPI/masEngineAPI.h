@@ -1,20 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "../../masDefs.h"
 
-//#ifndef MAS_GAME_API
-//    #define MAS_API extern "C" __declspec(dllimport)
-//#else
-//	#define MAS_API extern "C" __declspec(dllexport)
-//#endif
-//
-//#if defined(UNICODE) || defined(_UNICODE)
-//    #define MAS_TEXT(T) L##T
-//#else
-//	#define MAS_TEXT(T) T 
-//#endif
 
 struct masInfo
 {
@@ -321,6 +309,34 @@ struct masGameAPI
     masGame_Input_OnAxisFunc         masOnInputAxis;
     masGame_Input_OnTextEnterFunc    masOnTextEnter;
 };
+
+
+/*****************************************************************************
+* Window API For Game
+*****************************************************************************/
+struct masEngineWindowDesc
+{
+	const wchar_t *Title;
+	int32_t        Width;
+	int32_t        Height;
+};
+
+typedef void* masEngineWindowHandle;
+
+MAS_ENGINE_API masEngineWindowHandle masEngineWindow_GetHandle();
+MAS_ENGINE_API void masEngineWindow_SetDesc(masEngineWindowDesc* WindowDesc);
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
