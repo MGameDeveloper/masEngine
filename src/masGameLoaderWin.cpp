@@ -97,6 +97,7 @@ static bool masGameInternal_Recompile(masGame* Game)
 	if(!masGame_Compile(Game->Dir, "NewBuild"))
 	{
 		MAS_LOG_ERROR("Rebuilding game dll %s\n", Game->Dir);
+		// TODO: Remove NewBuild Created Folder
 		return false;
 	}	
 	
@@ -348,9 +349,6 @@ void masGame_UnLoad()
 {
 	if(Game)
 	{
-		//if(Game->DeInitFunc)
-		//	Game->DeInitFunc();
-		
 		FreeLibrary(Game->DLL);
 		free(Game);
 		Game = NULL;

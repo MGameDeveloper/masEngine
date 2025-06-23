@@ -23,8 +23,10 @@ __INTEL_COMPILER
 //
 #if defined(UNICODE) || defined(_UNICODE)
     #define MAS_TEXT(T) L##T
+	typedef wchar_t masChar;
 #else
-	#define MAS_TEXT(T) T 
+	#define MAS_TEXT(T) T
+    typedef char masChar;
 #endif
 
 

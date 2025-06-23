@@ -188,32 +188,11 @@ static bool masEngine_Create()
 		masWindow_SetCallbacks(Engine.Window, WndCallbacks); 
 	}
 
-	//if (!EngC_Input_Init()) 
-	//	return false;
-
-	//if (!masGame_Init())
-	//	return false;
 
 	// Will search in project folder for the name provided
 	if(!masGame_Load("test_eng", &Engine.Game))
 	    return false;
-    //else
-	//{
-	//	masGameAPI* GameApi = &Engine.Game;
-	//	masInfo Info = {};
-	//	GameApi->masGetGameInfo(&Info);
-	//	printf("GAME_Name:       %ls\n",   Info.Name);
-	//    printf("GAME_AssetPath:  %ls\n",   Info.AssetPath);
-	//    printf("GAME_Version:    %d.%d\n", Info.MajorVersion, Info.MinorVersion);
-	//    printf("GAME_Resolution: %dx%d\n", Info.Width, Info.Height);
-	//	
-	//	wchar_t Title[64] = {};
-	//	swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
-	//	Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
-	//	
-	//	masWindow_SetTitle(Engine.Window, Title);
-	//	masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
-	//}
+
 	Engine.Game.masInit();
 
 	masWindow_Show(Engine.Window, true);
@@ -223,6 +202,7 @@ static bool masEngine_Create()
 
 static void masEngine_Destroy()
 {
+	Engine.Game.masDeInit();
 	masGame_UnLoad();
 	masWindow_Destroy(&Engine.Window);
 }
@@ -247,25 +227,12 @@ int main(int argc, const char** argv)
 	while (!masWindow_IsClosed(Engine.Window))
 	{
 		if(masGame_ReloadOnChanges(&Engine.Game))
-		{
-			//masGameAPI* GameApi = &Engine.Game;
-		    //masInfo Info = {};
-		    //GameApi->masGetGameInfo(&Info);
-			//
-			//wchar_t Title[64] = {};
-		    //swprintf_s(Title, L"%ls  V%d.%d  %dx%d", Info.Name, 
-		    //Info.MajorVersion, Info.MinorVersion, Info.Width, Info.Height);
-		    //
-		    //masWindow_SetTitle(Engine.Window, Title);
-		    //masWindow_SetSize(Engine.Window, {Info.Width, Info.Height});
-		    
 			Engine.Game.masInit();
-		}
 		
 		masTime_Update();
 		masEngine_DispatchEvents();
 		
-		//masGame_Tick();
+		Engine.Game.masTick(masTime_DeltaTime(), masTime());
 	}
 
 	masEngine_Destroy();
@@ -278,29 +245,57 @@ int main(int argc, const char** argv)
 /*******************************************************************************************************************
 * MAS ENGINE API IMPL
 ********************************************************************************************************************/
-MAS_ENGINE_API masEngineWindowHandle masEngineWindow_GetHandle()
+
+
+/*****************************************************************************
+* Window API
+*****************************************************************************/
+MAS_ENGINE_API masEngine_Window masEngine_Window_GetHandle()
 {
 	return masWindow_GetHandle(Engine.Window);
 }
 
-MAS_ENGINE_API void masEngineWindow_SetDesc(masEngineWindowDesc* WindowDesc)
+MAS_ENGINE_API void masEngine_Window_SetTitle(const masChar* InTitle)
 {
-	wchar_t Title[64] = {};
-	swprintf_s(Title, L"%ls", WindowDesc->Title);
-	
-	masWindow_SetTitle(Engine.Window, Title);
-	masWindow_SetSize(Engine.Window, {WindowDesc->Width, WindowDesc->Height});
+	masWindow_SetTitle(Engine.Window, InTitle);
+}
+
+MAS_ENGINE_API void masEngine_Window_SetSize(int32_t InW, int32_t InH)
+{
+	masWindow_SetSize(Engine.Window, { InW, InH });
+}
+
+MAS_ENGINE_API void masEngine_Window_GetSize(int32_t* OutW, int32_t* OutH)
+{
+	masWindowSize Size = masWindow_GetSize(Engine.Window);
+	if(OutW)
+		*OutW = Size.x;
+	if(OutH)
+		*OutH = Size.y;
+}
+
+MAS_ENGINE_API void masEngine_Window_GetClientSize(int32_t* OutW, int32_t* OutH)
+{
+	masWindowSize ClientSize = masWindow_GetClientSize(Engine.Window);
+	if(OutW)
+		*OutW = ClientSize.x;
+	if(OutH)
+		*OutH = ClientSize.y;
 }
 
 
+/*****************************************************************************
+* Time API
+*****************************************************************************/
+MAS_ENGINE_API double masEngine_Time_Delta()
+{
+	return masTime_DeltaTime();
+}
 
-
-
-
-
-
-
-
+MAS_ENGINE_API double masEngine_Time()
+{
+	return masTime();
+}
 
 
 

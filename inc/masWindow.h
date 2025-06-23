@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "masDefs.h"
 
 /*****************************************************************************************
 * INTERFACE DATA
@@ -16,7 +17,7 @@ struct masWindow;
 /*****************************************************************************************
 * MAIN INTERFACE
 ******************************************************************************************/
-masWindow* masWindow_Create(const wchar_t* Title, int32_t Width, int32_t Height);
+masWindow* masWindow_Create(const masChar* Title, int32_t Width, int32_t Height);
 void       masWindow_Destroy(masWindow** Wnd);
 void       masWindow_DispatchEvents();
 bool       masWindow_IsClosed(masWindow* Wnd);
@@ -37,7 +38,7 @@ void*         masWindow_GetHandle(masWindow* Wnd);
 ******************************************************************************************/
 void masWindow_SetPosition(masWindow* Wnd, masWindowPos Pos);
 void masWindow_SetSize    (masWindow* Wnd, masWindowSize Size);
-void masWindow_SetTitle   (masWindow* Wnd, const wchar_t* Title);
+void masWindow_SetTitle   (masWindow* Wnd, const masChar* Title);
 
 
 /*****************************************************************************************
@@ -79,7 +80,7 @@ union masWindowKeyMod
 };
 
 typedef void(*masWindow_OnKeyFunc)            (int32_t KeyCode, masWindowKeyState KeyState, masWindowKeyMod KeyMod);
-typedef void(*masWindow_OnTextEnterFunc)      (wchar_t Letter);
+typedef void(*masWindow_OnTextEnterFunc)      (masChar Letter);
 typedef void(*masWindow_OnMouseButtonFunc)    (masWindowMouseKey Button, masWindowKeyState KeyState, masWindowKeyMod KeyMod, masPoint MousePos);
 typedef void(*masWindow_OnMouseMoveFunc)      (masPoint MousePos);
 typedef void(*masWindow_OnMouseEnterFunc)     ();

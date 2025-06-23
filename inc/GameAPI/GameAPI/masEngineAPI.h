@@ -4,17 +4,6 @@
 #include "../../masDefs.h"
 
 
-struct masInfo
-{
-	const wchar_t *Name;
-	const wchar_t *AssetPath;
-	int32_t        MajorVersion;
-	int32_t        MinorVersion;
-	int32_t        Width;
-	int32_t        Height;
-};
-
-
 /*****************************************************************************
 * 
 *****************************************************************************/
@@ -288,12 +277,11 @@ struct masGame_SystemEvent
 *****************************************************************************/
 typedef bool (*masGame_InitFunc)();
 typedef void (*masGame_DeInitFunc)();
-typedef void (*masGame_TickFunc)();
-typedef void (*masGame_GetInfoFunc)(masInfo* Info);
+typedef void (*masGame_TickFunc)(double DeltaTime, double AppTime);
 typedef void (*masGame_Event_OnSystemEventFunc)(masGame_SystemEvent Event);
 typedef void (*masGame_Input_OnActionFunc)(masGame_Input_Action* Action);
 typedef void (*masGame_Input_OnAxisFunc)(masGame_Input_Axis* Axis);
-typedef void (*masGame_Input_OnTextEnterFunc)(wchar_t Letter);
+typedef void (*masGame_Input_OnTextEnterFunc)(masChar Letter);
 
 
 struct masGameAPI
@@ -301,7 +289,6 @@ struct masGameAPI
 	masGame_InitFunc                 masInit;
     masGame_DeInitFunc               masDeInit;
     masGame_TickFunc                 masTick;
-    masGame_GetInfoFunc              masGetGameInfo;
 	
 	// Input Functions
     masGame_Event_OnSystemEventFunc  masOnSystemEvent;
@@ -311,28 +298,25 @@ struct masGameAPI
 };
 
 
+
+
 /*****************************************************************************
-* Window API For Game
+* Window API
 *****************************************************************************/
-struct masEngineWindowDesc
-{
-	const wchar_t *Title;
-	int32_t        Width;
-	int32_t        Height;
-};
+typedef void* masEngine_Window;
 
-typedef void* masEngineWindowHandle;
-
-MAS_ENGINE_API masEngineWindowHandle masEngineWindow_GetHandle();
-MAS_ENGINE_API void masEngineWindow_SetDesc(masEngineWindowDesc* WindowDesc);
+MAS_ENGINE_API masEngine_Window masEngine_Window_GetHandle();
+MAS_ENGINE_API void masEngine_Window_SetTitle(const masChar* InTitle);
+MAS_ENGINE_API void masEngine_Window_SetSize(int32_t InW, int32_t InH);
+MAS_ENGINE_API void masEngine_Window_GetSize(int32_t* OutW, int32_t* OutH);
+MAS_ENGINE_API void masEngine_Window_GetClientSize(int32_t* OutW, int32_t* OutH);
 
 
-
-
-
-
-
-
+/*****************************************************************************
+* Time API
+*****************************************************************************/
+MAS_ENGINE_API double masEngine_Time_Delta();
+MAS_ENGINE_API double masEngine_Time();
 
 
 
