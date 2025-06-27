@@ -275,27 +275,27 @@ struct masGame_SystemEvent
 /*****************************************************************************
 * 
 *****************************************************************************/
-typedef bool (*masGame_InitFunc)();
-typedef void (*masGame_DeInitFunc)();
-typedef void (*masGame_TickFunc)(double DeltaTime, double AppTime);
-typedef void (*masGame_Event_OnSystemEventFunc)(masGame_SystemEvent Event);
-typedef void (*masGame_Input_OnActionFunc)(masGame_Input_Action* Action);
-typedef void (*masGame_Input_OnAxisFunc)(masGame_Input_Axis* Axis);
-typedef void (*masGame_Input_OnTextEnterFunc)(masChar Letter);
-
-
-struct masGameAPI
-{
-	masGame_InitFunc                 masInit;
-    masGame_DeInitFunc               masDeInit;
-    masGame_TickFunc                 masTick;
-	
-	// Input Functions
-    masGame_Event_OnSystemEventFunc  masOnSystemEvent;
-    masGame_Input_OnActionFunc       masOnInputAction;
-    masGame_Input_OnAxisFunc         masOnInputAxis;
-    masGame_Input_OnTextEnterFunc    masOnTextEnter;
-};
+//typedef bool (*masGame_InitFunc)();
+//typedef void (*masGame_DeInitFunc)();
+//typedef void (*masGame_TickFunc)(double DeltaTime, double AppTime);
+//typedef void (*masGame_Event_OnSystemEventFunc)(masGame_SystemEvent Event);
+//typedef void (*masGame_Input_OnActionFunc)(masGame_Input_Action* Action);
+//typedef void (*masGame_Input_OnAxisFunc)(masGame_Input_Axis* Axis);
+//typedef void (*masGame_Input_OnTextEnterFunc)(masChar Letter);
+//
+//
+//struct masGameAPI
+//{
+//	masGame_InitFunc                 masInit;
+//    masGame_DeInitFunc               masDeInit;
+//    masGame_TickFunc                 masTick;
+//	
+//	// Input Functions
+//    masGame_Event_OnSystemEventFunc  masOnSystemEvent;
+//    masGame_Input_OnActionFunc       masOnInputAction;
+//    masGame_Input_OnAxisFunc         masOnInputAxis;
+//    masGame_Input_OnTextEnterFunc    masOnTextEnter;
+//};
 
 
 

@@ -5,10 +5,71 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "masGameLoader.h"
-#include "masDefs.h"
+
+
+#define MAS_GET_PROC_ADDRESS(DLL, FUNC_TYPE) (FUNC_TYPE)GetProcAddress(DLL, #FUNC_TYPE)
+
+#define MAS_CHECK_PROC_ADDRESS(FUNC_TYPE, FUNC_VAR)                                          \
+    if(FUNC_VAR == NULL)                                                                     \
+	{                                                                                        \
+	    MAS_LOG_ERROR("%s = NULL; [ %s ] address couldn't be found", #FUNC_VAR, #FUNC_TYPE); \
+	    return false;                                                                        \
+	}
+
+#define MAS_CALL_FUNC(DLL, FUNC_VAR) \
+    if(!DLL || !FUNC_VAR) return;    \
+	FUNC_VAR()
+	
 
 // 
-MAS_FUNC_TYPE(void, masGame_GetAPI, masGameAPI* GameAPI);
+//MAS_FUNC_TYPE(void, masGame_GetAPI, masGameAPI* GameAPI);
+MAS_FUNC_TYPE(bool, masStart);
+MAS_FUNC_TYPE(void, masTick);
+MAS_FUNC_TYPE(void, masStop);
+
+
+/*************************************************************************
+*
+**************************************************************************/
+void masSVPrint(masChar* Buf, uint32_t BufSize, const masChar* fmt, va_list Args)
+{
+#if defined(UNICODE) || defined(_UNICODE)
+    masChar NewFmt[MAX_PATH] = {};
+	int32_t i = 0;
+	while(*fmt)
+	{
+		NewFmt[i++] = *fmt;
+		if(*fmt == MAS_CHAR('%') && *(fmt + 1) == MAS_CHAR('s'))
+		{
+			NewFmt[i++] = MAS_CHAR('l');
+			NewFmt[i++] = MAS_CHAR('s');
+		}
+		
+		fmt++;
+	}
+	vswprintf(Buf, BufSize, NewFmt, Args);
+#else
+    vsprintf(Buf, BufSize, fmt, Args);
+#endif
+}
+
+void masSPrint(masChar* Buf, uint32_t BufSize, const masChar* fmt, ...)
+{
+	va_list Args;
+	va_start(Args, fmt);
+	masSVPrint(Buf, BufSize, fmt, Args);
+    va_end(Args);
+}
+
+void masPrint(const masChar* fmt, ...)
+{
+	static masChar Buf[2048];
+	memset(Buf, 0, sizeof(masChar) * 2048);
+	va_list Args;
+	va_start(Args, fmt);
+	masSVPrint(Buf, 2048, fmt, Args);
+	va_end(Args);
+}
 
 
 /*************************************************************************
@@ -28,6 +89,9 @@ struct masGame
     char            *Dir;
 	char            *Name;
     HMODULE          DLL;
+	masStart     masStartFunc;
+	masTick      masTickFunc;
+	masStop      masStopFunc;
 };
 static masGame *Game = NULL;
 
@@ -35,16 +99,16 @@ static masGame *Game = NULL;
 /*************************************************************************
 *
 **************************************************************************/
-static bool masGame_Compile(const char* GameDir, const char* BuildFolder)
+static bool masGame_Compile(const masChar* GameDir, const masChar* BuildFolder)
 {
 	DWORD CwdLen = 0;
-	char Cwd[256] = {};
-	GetCurrentDirectoryA(256, Cwd);
+	masChar Cwd[MAX_PATH] = {};
+	GetCurrentDirectory(MAX_PATH, Cwd);
 	
 	
 	// Check if BuildGameTemplate exists
-    const char* GameBuildTemplate = "BuildGameTemplate.bat";
-    if(!PathFileExistsA(GameBuildTemplate))
+    const masChar* GameBuildTemplate = MAS_TEXT("BuildGameTemplate.bat");
+    if(!PathFileExists(GameBuildTemplate))
     {
         MAS_LOG_ERROR("%s not found\n", GameBuildTemplate);
         return false;
@@ -195,14 +259,17 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 	CloseHandle(DirHandle);
 }
 
+
 /*************************************************************************
 *
 **************************************************************************/
-bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
+bool masGame_Load(const masChar* GameName/*, masGameAPI* GameAPI*/)
 {
-    char GameDir[256] = {};
-    sprintf(GameDir, "..\\Projects\\%s", GameName);
-    if(!PathFileExistsA(GameDir))
+    //char GameDir[256] = {};
+    //sprintf(GameDir, "..\\Projects\\%s", GameName);
+	masChar GameDir[MAX_PATH] = {};
+	masSPrint(GameDir, MAX_PATH, MAS_TEXT("..\\Projects\\%s"), GameName);
+    if(!PathFileExists(GameDir))
     {
         MAS_LOG_ERROR("No directory found [ %s ]\n", GameDir);
         return false;
@@ -210,7 +277,7 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
     
 
     //
-    char    GamePath[256] = {};
+    masChar    GamePath[MAX_PATH] = {};
     int32_t GamePathLen   = sprintf(GamePath, "%s\\Build\\masGame.dll", GameDir);
     HMODULE GameDLL       = LoadLibraryA(GamePath);
     if(!GameDLL)
@@ -235,8 +302,8 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
     }         
 
     //
-    int32_t   Len     = (int32_t)strlen(GameDir) + 1; // NULL Terminator
-    uint64_t  MemSize = (sizeof(masGame) + (sizeof(char) * Len));
+    int32_t  Len     = (int32_t)strlen(GameDir) + 1; // NULL Terminator
+    uint64_t MemSize = (sizeof(masGame) + (sizeof(char) * Len));
     Game = (masGame*)malloc(MemSize);
     if(!Game)
         return NULL;
@@ -250,16 +317,25 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
     Game->DLL        = GameDLL;
 	
 	//
-	const char* FuncName = "masGame_GetAPI";
-    masGame_GetAPI GetGameAPI = (masGame_GetAPI)GetProcAddress(Game->DLL, FuncName);
-	if(!GetGameAPI)
-	{
-		MAS_LOG_ERROR("LOADING masEngine_GetGameAPI");
-		return false;
-	}
+	//const char* FuncName = "masGame_GetAPI";
+    //masGame_GetAPI GetGameAPI = (masGame_GetAPI)GetProcAddress(Game->DLL, FuncName);
+	//if(!GetGameAPI)
+	//{
+	//	MAS_LOG_ERROR("LOADING masEngine_GetGameAPI");
+	//	return false;
+	//}
+	//GetGameAPI(GameAPI);
 	
-	// 
-	GetGameAPI(GameAPI);
+	// Acquire Addresses
+	Game->masStartFunc = MAS_GET_PROC_ADDRESS(Game->DLL, masStart);
+	Game->masTickFunc  = MAS_GET_PROC_ADDRESS(Game->DLL, masTick);
+	Game->masStopFunc  = MAS_GET_PROC_ADDRESS(Game->DLL, masStop);
+	// Validate Addresses
+	MAS_CHECK_PROC_ADDRESS(masStart, Game->masStartFunc);
+	MAS_CHECK_PROC_ADDRESS(masTick, Game->masTickFunc);
+	MAS_CHECK_PROC_ADDRESS(masStop, Game->masStopFunc);
+		
+	
 
     // Spawn thread
     DWORD  ThreadId = 0;
@@ -288,7 +364,7 @@ bool masGame_Load(const char* GameName, masGameAPI* GameAPI)
     return true;
 }
 
-bool masGame_ReloadOnChanges(masGameAPI* GameAPI)
+bool masGame_ReloadOnChanges(/*masGameAPI* GameAPI*/)
 {
 	bool Ret = false;
 	
@@ -327,12 +403,23 @@ bool masGame_ReloadOnChanges(masGameAPI* GameAPI)
 		else
 		{
 			Game->DLL = GameDLL;
-			const char* FuncName = "masGame_GetAPI";
-            masGame_GetAPI GetGameAPI = (masGame_GetAPI)GetProcAddress(Game->DLL, FuncName);
-	        if(!GetGameAPI)
-	        	MAS_LOG_ERROR("LOADING masEngine_GetGameAPI");
-			else
-				GetGameAPI(GameAPI);
+			
+			// Acquire Addresses
+			Game->masStartFunc = MAS_GET_PROC_ADDRESS(Game->DLL, masStart);
+	        Game->masTickFunc  = MAS_GET_PROC_ADDRESS(Game->DLL, masTick);
+	        Game->masStopFunc  = MAS_GET_PROC_ADDRESS(Game->DLL, masStop);
+	        // Validate Addresses
+	        MAS_CHECK_PROC_ADDRESS(masStrt, Game->masStartFunc);
+	        MAS_CHECK_PROC_ADDRESS(masTick, Game->masTickFunc);
+	        MAS_CHECK_PROC_ADDRESS(masStop, Game->masStopFunc);
+	
+			//Game->DLL = GameDLL;
+			//const char* FuncName = "masGame_GetAPI";
+            //masGame_GetAPI GetGameAPI = (masGame_GetAPI)GetProcAddress(Game->DLL, FuncName);
+	        //if(!GetGameAPI)
+	        //	MAS_LOG_ERROR("LOADING masEngine_GetGameAPI");
+			//else
+			//	GetGameAPI(GameAPI);
 		}
 		
 		MAS_LOG_INFO("DLL LOADED\n");
@@ -353,4 +440,28 @@ void masGame_UnLoad()
 		free(Game);
 		Game = NULL;
 	};
+}
+
+void masGame_Start()
+{
+	//if(!Game || !Game->masStart)
+	//	return;
+	//Game->masStartFunc();
+	MAS_CALL_FUNC(Game, Game->masStartFunc);
+}
+
+void masGame_Tick()
+{
+	//if(!Game || !Game->masTick)
+	//	return;
+	//Game->masTickFunc();
+	MAS_CALL_FUNC(Game, Game->masTickFunc);
+}
+
+void masGame_Stop()
+{
+	//if(!Game || !Game->masStop)
+	//	return;
+	//Game->masStopFunc();
+	MAS_CALL_FUNC(Game, Game->masStopFunc);
 }

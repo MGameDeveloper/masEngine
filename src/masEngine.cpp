@@ -27,7 +27,7 @@
 struct masEngine
 {
 	masWindow  *Window;
-	masGameAPI  Game;
+	//masGameAPI  Game;
 };
 static masEngine Engine = {};
 
@@ -190,11 +190,12 @@ static bool masEngine_Create()
 
 
 	// Will search in project folder for the name provided
-	if(!masGame_Load("test_eng", &Engine.Game))
-	    return false;
-
-	Engine.Game.masInit();
-
+	//if(!masGame_Load("eng_test", &Engine.Game))
+	//    return false;
+	//Engine.Game.masInit();
+    if(!masGame_Load(MAS_TEXT("eng_test")))
+		return false;
+	
 	masWindow_Show(Engine.Window, true);
 
 	return true;
@@ -202,7 +203,8 @@ static bool masEngine_Create()
 
 static void masEngine_Destroy()
 {
-	Engine.Game.masDeInit();
+	//Engine.Game.masDeInit();
+	masGame_Stop();
 	masGame_UnLoad();
 	masWindow_Destroy(&Engine.Window);
 }
@@ -226,13 +228,16 @@ int main(int argc, const char** argv)
 
 	while (!masWindow_IsClosed(Engine.Window))
 	{
-		if(masGame_ReloadOnChanges(&Engine.Game))
-			Engine.Game.masInit();
+		//if(masGame_ReloadOnChanges(&Engine.Game))
+		//	Engine.Game.masInit();
+		if(masGame_ReloadOnChanges())
+			masGame_Start();
 		
 		masTime_Update();
 		masEngine_DispatchEvents();
 		
-		Engine.Game.masTick(masTime_DeltaTime(), masTime());
+		//Engine.Game.masTick(masTime_DeltaTime(), masTime());
+		masGame_Tick();
 	}
 
 	masEngine_Destroy();
