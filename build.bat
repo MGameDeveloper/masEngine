@@ -1,5 +1,7 @@
 @echo off
 
+:: Clear cmd
+cls
 
 ::
 call BuildVars.bat
