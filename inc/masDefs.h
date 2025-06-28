@@ -14,8 +14,8 @@ __INTEL_COMPILER
 
 
 //
-#define MAS_LOG_ERROR(msg, ...)          printf("%s: ERROR -> "msg, MAS_FUNC_NAME, ##__VA_ARGS__)
-#define MAS_LOG_INFO(msg, ...)           printf("%s: INFO  -> "msg, MAS_FUNC_NAME, ##__VA_ARGS__)
+#define MAS_LOG_ERROR(msg, ...)          _tprintf(_T("%s: ERROR -> "msg), _T(MAS_FUNC_NAME), ##__VA_ARGS__)
+#define MAS_LOG_INFO(msg, ...)           _tprintf(_T("%s: INFO  -> "msg), _T(MAS_FUNC_NAME), ##__VA_ARGS__)
 #define MAS_ADDR_FROM(type, ptr, offset) (type*)(((uint8_t*)ptr)+offset)
 #define MAS_FUNC_TYPE(RET, NAME, ...)    typedef RET(*NAME)(##__VA_ARGS__)
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <tchar.h>
 #include "masGameLoader.h"
 
 
@@ -12,7 +13,7 @@
 #define MAS_CHECK_PROC_ADDRESS(FUNC_TYPE, FUNC_VAR)                                          \
     if(FUNC_VAR == NULL)                                                                     \
 	{                                                                                        \
-	    MAS_LOG_ERROR("%s = NULL; [ %s ] address couldn't be found", #FUNC_VAR, #FUNC_TYPE); \
+	    MAS_LOG_ERROR("%Ts = NULL; [ %Ts ] address couldn't be found", #FUNC_VAR, #FUNC_TYPE); \
 	    return false;                                                                        \
 	}
 
@@ -27,49 +28,6 @@ MAS_FUNC_TYPE(bool, masStart);
 MAS_FUNC_TYPE(void, masTick);
 MAS_FUNC_TYPE(void, masStop);
 
-
-/*************************************************************************
-*
-**************************************************************************/
-void masSVPrint(masChar* Buf, uint32_t BufSize, const masChar* fmt, va_list Args)
-{
-#if defined(UNICODE) || defined(_UNICODE)
-    masChar NewFmt[MAX_PATH] = {};
-	int32_t i = 0;
-	while(*fmt)
-	{
-		NewFmt[i++] = *fmt;
-		if(*fmt == MAS_CHAR('%') && *(fmt + 1) == MAS_CHAR('s'))
-		{
-			NewFmt[i++] = MAS_CHAR('l');
-			NewFmt[i++] = MAS_CHAR('s');
-		}
-		
-		fmt++;
-	}
-	vswprintf(Buf, BufSize, NewFmt, Args);
-#else
-    vsprintf(Buf, BufSize, fmt, Args);
-#endif
-}
-
-void masSPrint(masChar* Buf, uint32_t BufSize, const masChar* fmt, ...)
-{
-	va_list Args;
-	va_start(Args, fmt);
-	masSVPrint(Buf, BufSize, fmt, Args);
-    va_end(Args);
-}
-
-void masPrint(const masChar* fmt, ...)
-{
-	static masChar Buf[2048];
-	memset(Buf, 0, sizeof(masChar) * 2048);
-	va_list Args;
-	va_start(Args, fmt);
-	masSVPrint(Buf, 2048, fmt, Args);
-	va_end(Args);
-}
 
 
 /*************************************************************************
@@ -86,8 +44,8 @@ struct masChangesMonitorThread
 struct masGame
 {
 	masChangesMonitorThread MonitorThread;
-    char            *Dir;
-	char            *Name;
+    masChar         *Dir;
+	masChar         *Name;
     HMODULE          DLL;
 	masStart     masStartFunc;
 	masTick      masTickFunc;
@@ -99,31 +57,31 @@ static masGame *Game = NULL;
 /*************************************************************************
 *
 **************************************************************************/
-static bool masGame_Compile(const masChar* GameDir, const masChar* BuildFolder)
+static bool masGame_Compile(const TCHAR* GameDir, const TCHAR* BuildFolder)
 {
 	DWORD CwdLen = 0;
-	masChar Cwd[MAX_PATH] = {};
+	TCHAR Cwd[MAX_PATH] = {};
 	GetCurrentDirectory(MAX_PATH, Cwd);
 	
 	
 	// Check if BuildGameTemplate exists
-    const masChar* GameBuildTemplate = MAS_TEXT("BuildGameTemplate.bat");
+    const TCHAR* GameBuildTemplate = _T("BuildGameTemplate.bat");
     if(!PathFileExists(GameBuildTemplate))
     {
-        MAS_LOG_ERROR("%s not found\n", GameBuildTemplate);
+        MAS_LOG_ERROR("%Ts not found\n", GameBuildTemplate);
         return false;
     }
 	
 	
 	// Create Build.bat in Game directory if not exists
-	char    GameBuildPath[256] = {};
-    int32_t GameBuildPathLen   = sprintf(GameBuildPath, "%s\\%s\\Build.bat", Cwd, GameDir);
-	if(!PathFileExistsA(GameBuildPath))
+	TCHAR GameBuildPath[MAX_PATH] = {};
+    uint32_t GameBuildPathLen  = _stprintf(GameBuildPath, _T("%Ts\\%Ts\\Build.bat"), Cwd, GameDir);
+	if(!PathFileExists(GameBuildPath))
 	{
-		HANDLE GameBuildFile = CreateFileA(GameBuildPath, GENERIC_READ, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+		HANDLE GameBuildFile = CreateFile(GameBuildPath, GENERIC_READ, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	    if(GameBuildFile == INVALID_HANDLE_VALUE)
 	    {
-	    	MAS_LOG_ERROR("WIN32_ERROR_CODE[ %u ] - Creating Build.bat for %s\n", GetLastError(), GameDir);
+	    	MAS_LOG_ERROR("WIN32_ERROR_CODE[ %u ] - Creating Build.bat for %Ts\n", GetLastError(), GameDir);
 	    	CloseHandle(GameBuildFile);
 			return false;
 	    }
@@ -132,21 +90,21 @@ static bool masGame_Compile(const masChar* GameDir, const masChar* BuildFolder)
  
 	
     // Copy BuiltGameTemplate Content to the created above in Game Directory 
-	if(!CopyFileA(GameBuildTemplate, GameBuildPath, FALSE))
+	if(!CopyFile(GameBuildTemplate, GameBuildPath, FALSE))
 	{
-		MAS_LOG_ERROR("Copying %s to [ %s ]: %s\n", GameBuildTemplate, GameDir, "Build.bat");
+		MAS_LOG_ERROR("Copying %Ts to [ %Ts ]: %Ts\n", GameBuildTemplate, GameDir, _T("Build.bat"));
 		return false;
 	}
 	
-    char BuildGame[256] = {};
-    sprintf(BuildGame, "\"%s %s\"", GameBuildPath, BuildFolder);
-    printf("GAME_BUILD_COMMAND: %s\n", BuildGame);
+    TCHAR BuildGame[MAX_PATH] = {};
+    _stprintf(BuildGame, _T("\"%Ts %Ts\""), GameBuildPath, BuildFolder);
+    _tprintf(_T("GAME_BUILD_COMMAND: %Ts\n"), BuildGame);
 
     //
-    int32_t CmdRes = system(BuildGame);
+    int32_t CmdRes = _tsystem(BuildGame);
     if(CmdRes != 0)
     {
-        MAS_LOG_ERROR("Wasn't able to compile the game [ %s ]\n", GameDir);
+        MAS_LOG_ERROR("Wasn't able to compile the game [ %Ts ]\n", GameDir);
         return false;
     }
 
@@ -156,11 +114,11 @@ static bool masGame_Compile(const masChar* GameDir, const masChar* BuildFolder)
 static bool masGameInternal_Recompile(masGame* Game)
 {
 	// 
-	MAS_LOG_INFO("RE_COMPILE: %s\n", Game->Dir);
+	MAS_LOG_INFO("RE_COMPILE: %Ts\n", Game->Dir);
 	
-	if(!masGame_Compile(Game->Dir, "NewBuild"))
+	if(!masGame_Compile(Game->Dir, _T("NewBuild")))
 	{
-		MAS_LOG_ERROR("Rebuilding game dll %s\n", Game->Dir);
+		MAS_LOG_ERROR("Rebuilding game dll %Ts\n", Game->Dir);
 		// TODO: Remove NewBuild Created Folder
 		return false;
 	}	
@@ -172,9 +130,9 @@ static bool masGameInternal_Recompile(masGame* Game)
     return true;
 }
 
-bool masGameInternal_ShouldReloadOnFile(const wchar_t* FilePath, const wchar_t** Ext, uint32_t ExtCount)
+bool masGameInternal_ShouldReloadOnFile(const TCHAR* FilePath, const TCHAR** Ext, uint32_t ExtCount)
 {
-	const wchar_t* FileExt = wcsrchr(FilePath, L'.');
+	const TCHAR* FileExt = wcsrchr(FilePath, L'.');
 	//printf("\nFileExt: %ls\n", FileExt);
 	if(!FileExt)
 		return false;
@@ -197,14 +155,14 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 		return -1;
 	}
 	
-	HANDLE DirHandle = CreateFileA(pGame->Dir, FILE_LIST_DIRECTORY,
+	HANDLE DirHandle = CreateFile(pGame->Dir, FILE_LIST_DIRECTORY,
 	    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		NULL, OPEN_EXISTING,
 		FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
 		NULL);
 	if(DirHandle == INVALID_HANDLE_VALUE)
 	{
-		MAS_LOG_ERROR("Opengin directory %s to wach for changes\n", pGame->Dir);
+		MAS_LOG_ERROR("Opengin directory %Ts to wach for changes\n", pGame->Dir);
 		return false;
 	}
 	
@@ -214,12 +172,12 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 	OVERLAPPED Overlapped       = {};
 	Overlapped.hEvent           = CreateEvent(NULL, TRUE, FALSE, NULL);
 	
-	const wchar_t* Extensions[] = 
+	const TCHAR* Extensions[] = 
 	{
 		L".cpp", L".h"
 	};
 	uint32_t ExtCount = sizeof(Extensions)/sizeof(Extensions[0]);
-	wchar_t FilePath[MAX_PATH] = {};
+	TCHAR FilePath[MAX_PATH] = {};
 	
 	while(TRUE)
 	{
@@ -240,7 +198,7 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 						if(masGameInternal_ShouldReloadOnFile(FilePath, Extensions, ExtCount))
 						{
 							if(!masGameInternal_Recompile(pGame))
-								MAS_LOG_ERROR("Compiling Game[ %s ] on changes\n", pGame->Dir);
+								MAS_LOG_ERROR("Compiling Game[ %Ts ] on changes\n", pGame->Dir);
 							else
 								MAS_LOG_INFO("COMPILE_ON_CHANGES_SUCCESS\n");
 						}
@@ -263,58 +221,58 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 /*************************************************************************
 *
 **************************************************************************/
-bool masGame_Load(const masChar* GameName/*, masGameAPI* GameAPI*/)
+bool masGame_Load(const TCHAR* GameName/*, masGameAPI* GameAPI*/)
 {
     //char GameDir[256] = {};
-    //sprintf(GameDir, "..\\Projects\\%s", GameName);
-	masChar GameDir[MAX_PATH] = {};
-	masSPrint(GameDir, MAX_PATH, MAS_TEXT("..\\Projects\\%s"), GameName);
+    //sprintf(GameDir, "..\\Projects\\%Ts", GameName);
+	TCHAR GameDir[MAX_PATH] = {};
+	_stprintf(GameDir, _T("..\\Projects\\%Ts"), GameName);
     if(!PathFileExists(GameDir))
     {
-        MAS_LOG_ERROR("No directory found [ %s ]\n", GameDir);
+        MAS_LOG_ERROR("No directory found [ %Ts ]\n", GameDir);
         return false;
     }
     
 
     //
-    masChar    GamePath[MAX_PATH] = {};
-    int32_t GamePathLen   = sprintf(GamePath, "%s\\Build\\masGame.dll", GameDir);
-    HMODULE GameDLL       = LoadLibraryA(GamePath);
+    TCHAR    GamePath[MAX_PATH] = {};
+    int32_t GamePathLen   = _stprintf(GamePath, _T("%Ts\\Build\\masGame.dll"), GameDir);
+    HMODULE GameDLL       = LoadLibrary(GamePath);
     if(!GameDLL)
     {
-        if(!masGame_Compile(GameDir, "Build"))
+        if(!masGame_Compile(GameDir, _T("Build")))
         {
-            MAS_LOG_ERROR("Compiling [ %s ]\n", GameDir);
+            MAS_LOG_ERROR("Compiling [ %Ts ]\n", GameDir);
             return false;
         }
         else
 		{
-			MAS_LOG_INFO("Compiled [ %s ]\n", GameDir);		
-			MAS_LOG_INFO("Loading... [ %s ]\n", GamePath);
-			GameDLL = LoadLibraryA(GamePath);
+			MAS_LOG_INFO("Compiled [ %Ts ]\n", GameDir);		
+			MAS_LOG_INFO("Loading... [ %Ts ]\n", GamePath);
+			GameDLL = LoadLibrary(GamePath);
 			if(!GameDLL)
 			{
-				MAS_LOG_ERROR("Loading Failed [ %s ]\n", GameDir);
+				MAS_LOG_ERROR("Loading Failed [ %Ts ]\n", GameDir);
 				return false;
 			}
-			MAS_LOG_INFO("Loaded [ %s ]\n", GameDir);
+			MAS_LOG_INFO("Loaded [ %Ts ]\n", GameDir);
 		}
     }         
 
     //
     int32_t  Len     = (int32_t)strlen(GameDir) + 1; // NULL Terminator
-    uint64_t MemSize = (sizeof(masGame) + (sizeof(char) * Len));
+    uint64_t MemSize = (sizeof(masGame) + (sizeof(TCHAR) * Len));
     Game = (masGame*)malloc(MemSize);
     if(!Game)
         return NULL;
 
     //
     memset(Game, 0, MemSize);
-    Game->Dir = MAS_ADDR_FROM(char, Game, sizeof(masGame));
+    Game->Dir = MAS_ADDR_FROM(TCHAR, Game, sizeof(masGame));
 
     //
-    memcpy(Game->Dir, GameDir, sizeof(char) * (Len - 1));
-    Game->DLL        = GameDLL;
+    memcpy(Game->Dir, GameDir, sizeof(TCHAR) * (Len - 1));
+    Game->DLL = GameDLL;
 	
 	//
 	//const char* FuncName = "masGame_GetAPI";
@@ -343,7 +301,7 @@ bool masGame_Load(const masChar* GameName/*, masGameAPI* GameAPI*/)
 	    masGameInternal_MonitorAndCompileOnChanges, (LPVOID)Game, 0, &ThreadId);
     if(ThreadHandle == INVALID_HANDLE_VALUE)
 	{
-		printf("Creating Thread to monitor game directory for changes\n");
+		_tprintf(_T("Creating Thread to monitor game directory for changes\n"));
 		masGame_UnLoad();
 		return false;
 	}
@@ -354,12 +312,12 @@ bool masGame_Load(const masChar* GameName/*, masGameAPI* GameAPI*/)
 	InitializeCriticalSection(&Game->MonitorThread.CriticalSection);
 	
 	// Log
-    printf("%s: %s\n", MAS_FUNC_NAME, GameName);
-	printf("    MonitorThread:\n");
-	printf("        -Handle: 0x%p\n", Game->MonitorThread.Handle);
-	printf("        -Id    : %u\n", Game->MonitorThread.Id);
-    printf("    GameDir: %s\n",   Game->Dir);
-    printf("    Handle:    0x%p\n", Game->DLL);
+    _tprintf("%Ts: %Ts\n", MAS_FUNC_NAME, GameName);
+	_tprintf("    MonitorThread:\n");
+	_tprintf("        -Handle: 0x%p\n", Game->MonitorThread.Handle);
+	_tprintf("        -Id    : %u\n", Game->MonitorThread.Id);
+    _tprintf("    GameDir: %Ts\n",   Game->Dir);
+    _tprintf("    Handle:    0x%p\n", Game->DLL);
 
     return true;
 }
@@ -376,17 +334,17 @@ bool masGame_ReloadOnChanges(/*masGameAPI* GameAPI*/)
 		MAS_LOG_INFO("DLL UNLOADED\n");
 		
         //
-		char SwapCmd[MAX_PATH] = {};
-		int32_t SwapCmdLen = sprintf(SwapCmd,
-		    "cmd /c "
-			"\""
-			"cd /d \"%s\" && "
-			"(if exist Build ren Build OldBuild) && "
-			"(if exist NewBuild ren NewBuild Build) && "
-			"(if exist OldBuild rmdir /s /q OldBuild) "
-			"\"", Game->Dir);
+		TCHAR SwapCmd[MAX_PATH] = {};
+		int32_t SwapCmdLen = _stprintf(SwapCmd,
+		    _T( "cmd /c "
+			    "\""
+			    "cd /d \"%Ts\" && "
+			    "(if exist Build ren Build OldBuild) && "
+			    "(if exist NewBuild ren NewBuild Build) && "
+			    "(if exist OldBuild rmdir /s /q OldBuild) "
+			    "\""), Game->Dir);
 		
-		int32_t SwapCmdRes = system(SwapCmd);
+		int32_t SwapCmdRes = _tsystem(SwapCmd);
 		if(SwapCmdRes == -1)
 			MAS_LOG_ERROR("Could not remove OldBuild win32_error %u\n", GetLastError());
 		else
@@ -394,10 +352,10 @@ bool masGame_ReloadOnChanges(/*masGameAPI* GameAPI*/)
 		MAS_LOG_INFO("SWAP_CMD_RES: %d\n", SwapCmdRes);
 		
 		//
-		char DLLPath[MAX_PATH] = {};
-		sprintf(DLLPath, "%s\\Build\\masGame.dll", Game->Dir);
-		MAS_LOG_INFO("DLL_PATH: %s\n", DLLPath);
-		HMODULE GameDLL = LoadLibraryA(DLLPath);
+		TCHAR DLLPath[MAX_PATH] = {};
+		_stprintf(DLLPath, _T("%Ts\\Build\\masGame.dll"), Game->Dir);
+		MAS_LOG_INFO("DLL_PATH: %Ts\n", DLLPath);
+		HMODULE GameDLL = LoadLibrary(DLLPath);
 		if(!GameDLL)
 			MAS_LOG_ERROR("LOADING NEW GAME DLL FAILED\n");
 		else
