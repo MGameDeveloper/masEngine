@@ -19,6 +19,12 @@ __INTEL_COMPILER
 #define MAS_ADDR_FROM(type, ptr, offset) (type*)(((uint8_t*)ptr)+offset)
 #define MAS_FUNC_TYPE(RET, NAME, ...)    typedef RET(*NAME)(##__VA_ARGS__)
 
+#define MAS_ASSERT(x, msg, ...)                                               \
+    if(!(x))                                                                  \
+    {                                                                         \
+    	_tprintf(_T("%s: ASSERT  -> "msg), _T(MAS_FUNC_NAME), ##__VA_ARGS__); \
+		*(char*)0x0 = 0;                                                      \
+	}
 
 //
 #if defined(UNICODE) || defined(_UNICODE)

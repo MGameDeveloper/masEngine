@@ -7,6 +7,6 @@ bool   masGame_ReloadOnChanges(/*masGameAPI* GameAPI*/);
 void   masGame_UnLoad();
 
 
-void masGame_Start();
+bool masGame_Start();
 void masGame_Tick();
 void masGame_Stop();
