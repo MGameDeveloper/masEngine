@@ -96,13 +96,9 @@ static bool masGameInternal_Recompile()
 	if(!masGame_Compile(_T("NewBuild")))
 	{
 		MAS_LOG_ERROR("Rebuilding game dll %Ts\n", Game.Dir);
-		// TODO: Remove NewBuild Created Folder
 		return false;
 	}	
 	
-	EnterCriticalSection(&Game.MonitorThread.CriticalSection);
-	SetEvent(Game.MonitorThread.ReloadEvent);
-	LeaveCriticalSection(&Game.MonitorThread.CriticalSection);
 	MAS_LOG_INFO("RE COMPILE SUCCESS\n");
     return true;
 }
@@ -153,37 +149,48 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 		_T(".cpp"), _T(".h")
 	};
 	uint32_t ExtCount = sizeof(Extensions)/sizeof(Extensions[0]);
-	TCHAR FilePath[MAX_PATH] = {};
+
 	
 	while(TRUE)
 	{
 		bool bReadChange = ReadDirectoryChangesW(DirHandle, Buffer, BufferSize,
             TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, &ByteReturned, &Overlapped, NULL);
-
-        DWORD WaitResult = WaitForSingleObject(Overlapped.hEvent, INFINITE);
-		if(WaitResult == WAIT_OBJECT_0)
+        
+		//
+        DWORD WaitResult = WaitForSingleObject(Overlapped.hEvent, INFINITE);		
+		if(WaitResult != WAIT_OBJECT_0)
+			continue;
+		
+		//
+		bool bRecompile = false;
+        FILE_NOTIFY_INFORMATION* NotifyInfo = (FILE_NOTIFY_INFORMATION*)Buffer;
+		do
 		{
-			FILE_NOTIFY_INFORMATION* NotifyInfo = (FILE_NOTIFY_INFORMATION*)Buffer;
-		    do
-		    {
-		    	if(NotifyInfo->Action == FILE_ACTION_MODIFIED)
-		    	{
-		    		memcpy(FilePath, NotifyInfo->FileName, NotifyInfo->FileNameLength);
-		    		if(masGameInternal_ShouldReloadOnFile(FilePath, Extensions, ExtCount))
-		    		{
-		    			if(!masGameInternal_Recompile())
-		    				MAS_LOG_ERROR("Compiling Game[ %Ts ] on changes\n", pGame->Dir);
-		    			else
-		    				MAS_LOG_INFO("COMPILE_ON_CHANGES_SUCCESS\n");
-		    		}
-		    		memset(FilePath, 0, sizeof(TCHAR) * MAX_PATH);
-		    	}
-		    	
-		    	if(NotifyInfo->NextEntryOffset == 0)
-		    		break;
-		    	NotifyInfo = MAS_ADDR_FROM(FILE_NOTIFY_INFORMATION, NotifyInfo, NotifyInfo->NextEntryOffset);
-		    }while(TRUE);
-		}   		
+			if(NotifyInfo->Action == FILE_ACTION_MODIFIED)
+			{
+				if(masGameInternal_ShouldReloadOnFile(NotifyInfo->FileName, Extensions, ExtCount))
+		            bRecompile = true;
+			}
+			
+			if(NotifyInfo->NextEntryOffset == 0)
+				break;
+			
+			NotifyInfo = MAS_ADDR_FROM(FILE_NOTIFY_INFORMATION, NotifyInfo, NotifyInfo->NextEntryOffset);
+			
+		}while(TRUE);
+		
+		// To Prevent from compiling multiple times since some text editors will cause multiple modify message
+		if(bRecompile)
+		{
+			if(masGameInternal_Recompile())
+			{	
+				EnterCriticalSection(&Game.MonitorThread.CriticalSection);
+				SetEvent(Game.MonitorThread.ReloadEvent);
+                LeaveCriticalSection(&Game.MonitorThread.CriticalSection);  
+			}
+		    else
+		   	    MAS_LOG_ERROR("Compiling Game[ %Ts ] on changes\n", pGame->Dir);
+		} 		
 	}
 	
 	CloseHandle(Overlapped.hEvent);
@@ -237,11 +244,15 @@ bool masGame_Load(const TCHAR* GameName)
 	_tprintf(_T("        -Id    : %u\n"), Game.MonitorThread.Id);
     _tprintf(_T("    GameDir: %Ts\n"),   Game.Dir);
     _tprintf(_T("    Handle:    0x%p\n"), Game.DLL);
-
+    _tprintf(_T("    DLL_FUNCS:\n"));
+	_tprintf(_T("        -masStart: 0x%p\n"), Game.masStartFunc);
+	_tprintf(_T("        -masStop:  0x%p\n"), Game.masStopFunc);
+	_tprintf(_T("        -masTick:  0x%p\n"), Game.masTickFunc);
+	
     return true;
 }
 
-bool masGame_ReloadOnChanges(/*masGameAPI* GameAPI*/)
+bool masGame_ReloadOnChanges()
 {
 	bool  Ret               = false;
 	TCHAR DLLPath[MAX_PATH] = {};
@@ -263,7 +274,6 @@ bool masGame_ReloadOnChanges(/*masGameAPI* GameAPI*/)
 			   "(if exist NewBuild ren NewBuild Build) && "
 			   "(if exist OldBuild rmdir /s /q OldBuild) "
 			   "\""), Game.Dir);
-		_tprintf(_T("GameDir: %Ts\n"), Game.Dir);
 		
 		MAS_ASSERT(_tsystem(SwapCmd) != -1, "Could not remove OldBuild win32_error %u\n", GetLastError());
 	
