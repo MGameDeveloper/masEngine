@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <tchar.h>
 #include "masGameLoader.h"
+#include "masTime.h"
+
 
 #define MAS_GET_PROC_ADDRESS(DLL, FUNC_TYPE) (FUNC_TYPE)GetProcAddress(DLL, #FUNC_TYPE)
 
@@ -53,8 +55,19 @@ static masGame Game = {};
 /*************************************************************************
 *
 **************************************************************************/
+#define COLOR_RED     "\033[31m"
+#define COLOR_GREEN   "\033[32m"
+#define COLOR_YELLOW  "\033[33m"
+#define COLOR_BLUE    "\033[34m"
+#define COLOR_CYAN    "\033[36m"
+#define COLOR_RESET   "\033[0m"
 static bool masGameInternal_Compile(const TCHAR* BuildFolder)
 {
+	_tprintf(_T(COLOR_CYAN"\n"));
+	_tprintf(_T("**********************************************************\n"));
+	_tprintf(_T("*                  COMPILING_GAME                        *\n"));
+	_tprintf(_T("**********************************************************\n"COLOR_RESET));
+	
     const TCHAR* GameBuildTemplate = _T("BuildGameTemplate.bat");
     if(!PathFileExists(GameBuildTemplate))
     {
@@ -85,7 +98,14 @@ static bool masGameInternal_Compile(const TCHAR* BuildFolder)
     TCHAR BuildGame[MAX_PATH] = {};
     _stprintf(BuildGame, _T("\"%Ts %Ts\""), GameBuildPath, BuildFolder);
 
-	MAS_ASSERT(_tsystem(BuildGame) != -1, "Wasn't able to compile the game [ %Ts ]\n", Game.Dir);  
+	if(_tsystem(BuildGame) != 0)
+	{
+		_tprintf(_T(COLOR_RED"\n*** GAME_COMPILE_FAILED ***\n\n"COLOR_RESET));
+		return false;
+	}
+
+    _tprintf(_T(COLOR_GREEN"\n*** GAME_COMPILE_SUCCESS ***\n\n"COLOR_RESET));
+	
     return true;
 }
 
@@ -119,12 +139,14 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 	};
 	uint32_t ExtCount = sizeof(Extensions)/sizeof(Extensions[0]);
 
-	
+	double LastTimeCheck = 0.f;
 	while(TRUE)
 	{		
 		bool bReadChange = ReadDirectoryChangesW(DirHandle, Buffer, BufferSize,
             TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, &ByteReturned, &Overlapped, NULL);
-        
+        if(LastTimeCheck > masTime())
+			continue;
+		
 		//
         DWORD WaitResult = WaitForSingleObject(Overlapped.hEvent, INFINITE);		
 		if(WaitResult != WAIT_OBJECT_0)
@@ -148,7 +170,6 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 					
 	            	if(_tcsicmp(FileExtension, Extensions[i]) == 0)
 	            	{
-						_tprintf(_T("FILE_CHANGE: %Ts\n"), FileName);
 						bRecompile = true;
 	            		break;
 	            	}
@@ -172,9 +193,8 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 			{	
 		        ResetEvent(Game.MonitorThread.ReCompileEvent);
 				SetEvent(Game.MonitorThread.ReloadEvent);
+				LastTimeCheck = masTime() + 2.f;
 			}
-		    else
-		   	    MAS_LOG_ERROR("Compiling Game[ %Ts ] on changes\n", pGame->Dir);
 		} 		
 	}
 	
