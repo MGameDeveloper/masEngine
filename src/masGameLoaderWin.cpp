@@ -7,7 +7,6 @@
 #include <tchar.h>
 #include "masGameLoader.h"
 
-
 #define MAS_GET_PROC_ADDRESS(DLL, FUNC_TYPE) (FUNC_TYPE)GetProcAddress(DLL, #FUNC_TYPE)
 
 #define MAS_CHECK_PROC_ADDRESS(FUNC_TYPE, FUNC_VAR)                                                    \
@@ -33,6 +32,7 @@ struct masMonitorThread
 {
 	HANDLE           Handle;
 	HANDLE           ReloadEvent;
+	HANDLE           ReCompileEvent;
 	CRITICAL_SECTION CriticalSection;
 	DWORD            Id;
 };
@@ -53,7 +53,7 @@ static masGame Game = {};
 /*************************************************************************
 *
 **************************************************************************/
-static bool masGame_Compile(const TCHAR* BuildFolder)
+static bool masGameInternal_Compile(const TCHAR* BuildFolder)
 {
     const TCHAR* GameBuildTemplate = _T("BuildGameTemplate.bat");
     if(!PathFileExists(GameBuildTemplate))
@@ -89,37 +89,6 @@ static bool masGame_Compile(const TCHAR* BuildFolder)
     return true;
 }
 
-static bool masGameInternal_Recompile()
-{
-	MAS_LOG_INFO("RE_COMPILE: %Ts\n", Game.Dir);
-	
-	if(!masGame_Compile(_T("NewBuild")))
-	{
-		MAS_LOG_ERROR("Rebuilding game dll %Ts\n", Game.Dir);
-		return false;
-	}	
-	
-	MAS_LOG_INFO("RE COMPILE SUCCESS\n");
-    return true;
-}
-
-bool masGameInternal_ShouldReloadOnFile(const TCHAR* FilePath, const TCHAR** Ext, uint32_t ExtCount)
-{
-	const TCHAR* FileExt = _tcsrchr(FilePath, _T('.'));
-	if(!FileExt)
-		return false;
-	
-	for(int32_t i = 0; i < ExtCount; ++i)
-	{
-		if(_tcsicmp(FileExt, Ext[i]) == 0)
-		{
-			_tprintf(_T("OnChangeFile[ %Ts ]\n"), FilePath);
-			return true;
-		}
-	}
-	
-	return false;
-}
 
 DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 {
@@ -152,7 +121,7 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 
 	
 	while(TRUE)
-	{
+	{		
 		bool bReadChange = ReadDirectoryChangesW(DirHandle, Buffer, BufferSize,
             TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, &ByteReturned, &Overlapped, NULL);
         
@@ -162,15 +131,32 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 			continue;
 		
 		//
+		TCHAR FileName[MAX_PATH] = {};
 		bool bRecompile = false;
         FILE_NOTIFY_INFORMATION* NotifyInfo = (FILE_NOTIFY_INFORMATION*)Buffer;
 		do
 		{
 			if(NotifyInfo->Action == FILE_ACTION_MODIFIED)
 			{
-				if(masGameInternal_ShouldReloadOnFile(NotifyInfo->FileName, Extensions, ExtCount))
-		            bRecompile = true;
+			    memset(FileName, 0, sizeof(TCHAR) * MAX_PATH);
+				memcpy(FileName, NotifyInfo->FileName, NotifyInfo->FileNameLength);
+				const TCHAR* FileExtension = _tcsrchr(FileName, _T('.'));           
+	            for(int32_t i = 0; i < ExtCount; ++i)
+	            {
+				    if(!FileExtension)
+	            	    break;
+					
+	            	if(_tcsicmp(FileExtension, Extensions[i]) == 0)
+	            	{
+						_tprintf(_T("FILE_CHANGE: %Ts\n"), FileName);
+						bRecompile = true;
+	            		break;
+	            	}
+	            }
 			}
+			
+			if(bRecompile)
+				break;
 			
 			if(NotifyInfo->NextEntryOffset == 0)
 				break;
@@ -182,11 +168,10 @@ DWORD WINAPI masGameInternal_MonitorAndCompileOnChanges(LPVOID Param)
 		// To Prevent from compiling multiple times since some text editors will cause multiple modify message
 		if(bRecompile)
 		{
-			if(masGameInternal_Recompile())
+			if(masGameInternal_Compile(_T("NewBuild")))
 			{	
-				EnterCriticalSection(&Game.MonitorThread.CriticalSection);
+		        ResetEvent(Game.MonitorThread.ReCompileEvent);
 				SetEvent(Game.MonitorThread.ReloadEvent);
-                LeaveCriticalSection(&Game.MonitorThread.CriticalSection);  
 			}
 		    else
 		   	    MAS_LOG_ERROR("Compiling Game[ %Ts ] on changes\n", pGame->Dir);
@@ -214,7 +199,7 @@ bool masGame_Load(const TCHAR* GameName)
     Game.DLL   = LoadLibrary(GamePath);
     if(!Game.DLL)
     {
-		MAS_ASSERT(masGame_Compile(/*Game.Dir,*/ _T("Build")), "Failed Compiling [ %Ts ]\n", Game.Dir);
+		MAS_ASSERT(masGameInternal_Compile(/*Game.Dir,*/ _T("Build")), "Failed Compiling [ %Ts ]\n", Game.Dir);
 		
 		Game.DLL = LoadLibrary(GamePath);
 		MAS_ASSERT(Game.DLL, "Loading Failed [ %Ts ]\n", Game.Dir);
@@ -235,9 +220,10 @@ bool masGame_Load(const TCHAR* GameName)
 		masGame_UnLoad();
 		return false;
 	}
-	Game.MonitorThread.ReloadEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	InitializeCriticalSection(&Game.MonitorThread.CriticalSection);
-
+	Game.MonitorThread.ReloadEvent    = CreateEvent(NULL, TRUE, FALSE, NULL);
+	Game.MonitorThread.ReCompileEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    SetEvent(Game.MonitorThread.ReCompileEvent);
+	
     _tprintf(_T("%Ts: %Ts\n"), _T(MAS_FUNC_NAME), GameName);
 	_tprintf(_T("    MonitorThread:\n"));
 	_tprintf(_T("        -Handle: 0x%p\n"), Game.MonitorThread.Handle);
@@ -257,7 +243,6 @@ bool masGame_ReloadOnChanges()
 	bool  Ret               = false;
 	TCHAR DLLPath[MAX_PATH] = {};
 	
-	EnterCriticalSection(&Game.MonitorThread.CriticalSection);
 	if(WaitForSingleObject(Game.MonitorThread.ReloadEvent, 0) == WAIT_OBJECT_0)
 	{
 	    FreeLibrary(Game.DLL);
@@ -291,10 +276,10 @@ bool masGame_ReloadOnChanges()
 		
 		MAS_LOG_INFO("DLL LOADED\n");
 	
-		ResetEvent(Game.MonitorThread.ReloadEvent);	
+		ResetEvent(Game.MonitorThread.ReloadEvent);
+		SetEvent(Game.MonitorThread.ReCompileEvent);
 		Ret = true;
 	}
-	LeaveCriticalSection(&Game.MonitorThread.CriticalSection);
 	
 	return Ret;
 }
@@ -303,7 +288,7 @@ void masGame_UnLoad()
 {
 	if(Game.DLL)
 		FreeLibrary(Game.DLL);	
-	DeleteCriticalSection(&Game.MonitorThread.CriticalSection);
+
 	TerminateThread(Game.MonitorThread.Handle, 0);
 	CloseHandle(Game.MonitorThread.Handle);
 	memset(&Game, 0, sizeof(masGame));

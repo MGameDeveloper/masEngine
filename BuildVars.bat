@@ -21,6 +21,7 @@ set CompileOptions=%CompileOptions%  -fastfail                 &::
 ::set CompileOptions=%CompileOptions%  -analyze                  &::
 set CompileOptions=%CompileOptions%  -FC                       &:: Displays the full path of source code files passed to cl.exe in diagnostic text
 set CompileOptions=%CompileOptions%  -MP                       &:: Builds multiple source files concurrently
+set CompileOptions=%CompileOptions%  -FS                       &:: 
 ::set CompileOptions=%CompileOptions%  -Wall                     &:: Enable all warnings, including warnings that are disabled by default
 set CompileOptions=%CompileOptions%  -options:strict           &:: Unrecognized compiler options are errors.
 set CompileOptions=%CompileOptions%  -diagnostics:caret        &:: Diagnostics format prints column and the indicated line of source
