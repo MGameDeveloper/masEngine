@@ -30,7 +30,7 @@ if not exist %PDB_DIR%   ( mkdir %PDB_DIR%   )
 set INC_DIR=-I"%GAME_PATH%Inc\\" -I"%GAME_PATH%\..\..\Engine\Inc\GameAPI\\"
 set SRC_DIR=%GAME_PATH%Src\*.cpp
 set LIB_DIR=-LIBPATH:"%GAME_PATH%Lib\\" -LIBPATH:"%GAME_PATH%\..\..\Engine\Build\"
-set SYS_LIB=masEngine.lib
+set SYS_LIB=masEngine.lib DXGI.lib D3D11.lib
 
 :: Setup build command
 set BuildGame=cl

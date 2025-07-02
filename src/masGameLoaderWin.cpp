@@ -214,6 +214,7 @@ bool masGame_Load(const TCHAR* GameName)
 	
     MAS_ASSERT(PathFileExists(Game.Dir), "No directory found [ %Ts ]\n", Game.Dir);
 	
+    //TODO: find a way to to check if last run of dll runs with no problem if not recompile before load otherwise just load
 	TCHAR GamePath[MAX_PATH]  = {};
     _stprintf(GamePath, _T("%Ts\\Build\\masGame.dll"), Game.Dir);
     Game.DLL   = LoadLibrary(GamePath);

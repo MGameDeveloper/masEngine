@@ -31,7 +31,8 @@ set CompileOptions=%CompileOptions%  -D_CRT_SECURE_NO_WARNINGS &::
 
 
 :: GENERAL LINKER OPTIONS
-set LinkOptions=              -DEBUG       &:: Create debug information
+set LinkOptions= -SUBSYSTEM:CONSOLE -DEBUG       &:: Create debug information
 set LinkOptions=%LinkOptions% -INCREMENTAL &:: 
 set LinkOptions=%LinkOptions% -WX          &:: 
+
 ::set LinkOptions=%LinkOptions% -PROFILER    &::
