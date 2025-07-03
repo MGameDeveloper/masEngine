@@ -310,6 +310,7 @@ MAS_ENGINE_API void masEngine_Window_SetTitle(const masChar* InTitle);
 MAS_ENGINE_API void masEngine_Window_SetSize(int32_t InW, int32_t InH);
 MAS_ENGINE_API void masEngine_Window_GetSize(int32_t* OutW, int32_t* OutH);
 MAS_ENGINE_API void masEngine_Window_GetClientSize(int32_t* OutW, int32_t* OutH);
+MAS_ENGINE_API void masEngine_Window_GetAspectRatio(float* OutAspectRatio);
 
 
 /*****************************************************************************
@@ -317,7 +318,6 @@ MAS_ENGINE_API void masEngine_Window_GetClientSize(int32_t* OutW, int32_t* OutH)
 *****************************************************************************/
 MAS_ENGINE_API double masEngine_Time_Delta();
 MAS_ENGINE_API double masEngine_Time();
-
 
 
 

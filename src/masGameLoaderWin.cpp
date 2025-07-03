@@ -210,7 +210,7 @@ bool masGame_Load(const TCHAR* GameName)
 {
 	DWORD CwdLen = GetCurrentDirectory(MAX_PATH, Game.Dir);
 	_stprintf(Game.Name, _T("%Ts"), GameName);
-	_stprintf(Game.Dir + CwdLen, _T("\\..\\Projects\\%Ts"), GameName); 
+	_stprintf(Game.Dir + CwdLen, _T("\\Projects\\%Ts"), GameName); 
 	
     MAS_ASSERT(PathFileExists(Game.Dir), "No directory found [ %Ts ]\n", Game.Dir);
 	
@@ -266,6 +266,8 @@ bool masGame_ReloadOnChanges()
 	
 	if(WaitForSingleObject(Game.MonitorThread.ReloadEvent, 0) == WAIT_OBJECT_0)
 	{
+		masGame_Stop();
+		
 	    FreeLibrary(Game.DLL);
         Game.DLL = NULL;
 		MAS_LOG_INFO("DLL UNLOADED\n");

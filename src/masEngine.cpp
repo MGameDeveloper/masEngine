@@ -285,6 +285,14 @@ MAS_ENGINE_API void masEngine_Window_GetClientSize(int32_t* OutW, int32_t* OutH)
 		*OutH = ClientSize.y;
 }
 
+MAS_ENGINE_API void masEngine_Window_GetAspectRatio(float* OutAspectRatio)
+{
+	if(!OutAspectRatio)
+		return;
+	
+	masWindowSize ClientSize = masWindow_GetClientSize(Engine.Window);
+	*OutAspectRatio = (float)ClientSize.x / (float)ClientSize.y;
+}
 
 /*****************************************************************************
 * Time API
