@@ -217,10 +217,12 @@ bool masGame_Load(const TCHAR* GameName)
     //TODO: find a way to to check if last run of dll runs with no problem if not recompile before load otherwise just load
 	TCHAR GamePath[MAX_PATH]  = {};
     _stprintf(GamePath, _T("%Ts\\Build\\masGame.dll"), Game.Dir);
+	// needed if the dll compiled successfuly but crushes at real time it would always load it even if we solve the issue without the exe being running
+	MAS_ASSERT(masGameInternal_Compile(/*Game.Dir,*/ _T("Build")), "Failed Compiling [ %Ts ]\n", Game.Dir);
     Game.DLL   = LoadLibrary(GamePath);
     if(!Game.DLL)
     {
-		MAS_ASSERT(masGameInternal_Compile(/*Game.Dir,*/ _T("Build")), "Failed Compiling [ %Ts ]\n", Game.Dir);
+		//MAS_ASSERT(masGameInternal_Compile(/*Game.Dir,*/ _T("Build")), "Failed Compiling [ %Ts ]\n", Game.Dir);
 		
 		Game.DLL = LoadLibrary(GamePath);
 		MAS_ASSERT(Game.DLL, "Loading Failed [ %Ts ]\n", Game.Dir);
